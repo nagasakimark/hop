@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Megane Hop — Voice Studio (record your own voice pack)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{color-scheme:light;--ink:#1f2a44;--mist:#eef6f3;--accent:#ff7a3d;--good:#3fb068;--bad:#e5544a;--line:#d5dee6}
+  body{margin:0;font-family:"Baloo 2","Trebuchet MS",system-ui,sans-serif;background:#10203a;color:var(--ink)}
+  header{position:sticky;top:0;z-index:5;background:#fff;border-bottom:4px solid var(--ink);padding:10px 18px}
+  header h1{margin:0;font-size:24px}
+  header p{margin:2px 0 0;font-size:14px;color:#43537a;font-weight:600}
+  #bar{height:14px;background:#dfe5ec;border-radius:8px;overflow:hidden;margin-top:8px}
+  #bar i{display:block;height:100%;width:0;background:var(--good);transition:width .2s}
+  #toolbar{position:sticky;top:0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#fff;padding:10px 18px;border-bottom:4px solid var(--ink)}
+  #toolbar .spacer{flex:1}
+  button{font-family:inherit;cursor:pointer}
+  .btn{font-weight:800;font-size:16px;border:3px solid var(--ink);border-radius:12px;padding:6px 14px 4px;background:#fff;color:var(--ink)}
+  .btn.go{background:var(--accent);color:#fff}
+  .btn.teal{background:#2c9d94;color:#fff}
+  .btn:disabled{opacity:.45}
+  select,input[type=search]{font:600 16px inherit;padding:6px 10px;border-radius:10px;border:3px solid var(--ink)}
+  label.chk{font-weight:800;font-size:15px;display:flex;gap:6px;align-items:center}
+  main{padding:16px 18px 60px;max-width:1200px;margin:0 auto}
+  h2{color:#fff;margin:26px 0 4px;font-size:26px}
+  h2 small{font-size:15px;color:#bcd}
+  .sub{color:#cdd8ea;font-weight:600;margin:0 0 10px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+  .card{background:#fff;border-radius:16px;border:3px solid var(--ink);padding:8px 10px;display:flex;flex-direction:column;gap:4px}
+  .card.done{border-color:var(--good);background:#effaf2}
+  .card.recording{border-color:var(--bad);background:#fdeceb}
+  .card .w{font-size:30px;font-weight:800;line-height:1.05;word-break:break-word}
+  .card .fn{font-size:12px;color:#68768f;font-weight:700;font-family:monospace}
+  .card .tags{font-size:12px;font-weight:800;color:#43537a}
+  .card .row{display:flex;gap:6px;margin-top:auto}
+  .card .row button{flex:1;border:2px solid var(--ink);border-radius:10px;background:#fff;font-size:17px;font-weight:800;padding:4px 0}
+  .card .row button:disabled{opacity:.35}
+  .card .rec.live{background:var(--bad);color:#fff}
+  .card .st{font-size:13px;font-weight:700;color:#68768f;min-height:18px}
+  .card.done .st{color:var(--good)}
+  #toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:14px;padding:10px 22px;font-weight:800;display:none;z-index:9}
+  .how{background:#fff;border-radius:16px;border:3px solid var(--ink);padding:12px 18px;margin-top:18px;font-weight:600}
+  .how code{background:var(--mist);padding:0 6px;border-radius:6px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎙️ Megane Hop — Voice Studio</h1>
+  <p>Record every word below, one file per word. Files save as <b>sun.mp3</b>, <b>ship.mp3</b>, … into a <b>voices/</b> folder the game can later use. Progress is saved in this browser.</p>
+  <div id="bar"><i></i></div>
+  <p id="progress">0 / 371 words recorded</p>
+</header>
+<div id="toolbar">
+  <button class="btn teal" id="micBtn">🎤 Enable microphone</button>
+  <select id="levelFilter"><option value="0">All levels</option></select>
+  <input type="search" id="search" placeholder="Search word…">
+  <label class="chk"><input type="checkbox" id="hideDone"> hide recorded</label>
+  <label class="chk"><input type="checkbox" id="autoNext" checked> auto-next</label>
+  <span class="spacer"></span>
+  <button class="btn go" id="zipBtn">⬇ Download all (.zip)</button>
+</div>
+<main>
+  <div class="how">
+    <b>How to record:</b> 1) Enable microphone &nbsp;2) press <b>●</b> on a card, say the word clearly, press <b>■</b> &nbsp;3) press <b>▶</b> to check it, re-record if needed.
+    Silence at the start/end is trimmed automatically. Tip: record in a quiet room, keep the same distance from the mic, and say each word the way you want kids to hear it in the game.
+    If the MP3 encoder can't load (offline), files fall back to <code>.wav</code> — same names, still fine.
+  </div>
+  <h2>Words <small id="wordCount"></small></h2>
+  <p class="sub">Required — these are all 371 distinct words the game can speak (quiz questions, lessons, practice, review).</p>
+  <div class="grid" id="wordGrid"></div>
+  <h2>Letter &amp; pattern sounds <small id="sndCount"></small></h2>
+  <p class="sub">Optional — the game does <b>not</b> speak these yet (letters are shown, not spoken), but recording them now means a future update can voice them too.</p>
+  <div class="grid" id="sndGrid"></div>
+</main>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* Word -> not needed; level -> words (extracted from index.html LEVELS + teach cards) */
+const BY_LEVEL = {
+1:["alligator","ant","apple","astronaut","igloo","ink","insect","itchy","net","nine","nose","nut","pan","pen","pig","pizza","sad","six","sock","sun","ten","tiger","top","tub"],
+2:["cake","cat","cow","cup","desk","dig","dog","duck","egg","elbow","elephant","envelope","hat","hen","horse","hug","key","kid","king","kite","map","milk","moon","mop","rabbit","red","rug","run"],
+3:["bat","bed","box","bus","fan","fish","fox","frog","game","gift","goat","gum","leg","lemon","lion","log","octopus","olive","otter","ox","umbrella","uncle","under","up"],
+4:["jam","jelly","jet","jump","queen","quick","quilt","quiz","van","vest","vet","violin","web","wet","wind","window","yak","yellow","yes","yo-yo","zebra","zero","zip","zoo"],
+5:["ax","bag","bed","box","bug","bus","cap","cat","cup","dog","drum","fox","gas","gum","ham","hat","jam","leg","lid","map","mud","net","nut","pen","pig","pin","red","sad","ship","sit","six","sun","swim","ten","top","van","yes"],
+6:["bad","bag","bed","beg","big","bud","bug","cap","cat","cop","cup","dig","dog","dug","fan","fin","fun","ham","hat","him","hit","hot","hum","hut","lap","lip","lop","net","not","nut","pan","pat","pen","pet","pig","pin","pit","pot","rag","rig","rug","sat","set","sit","sun","tap","tip","top"],
+7:["bat","bed","beg","big","box","bug","bun","bus","can","cap","cat","cub","cup","cut","dig","dog","dot","fed","fix","fog","fox","fun","ham","hat","hen","hog","hop","hug","hut","jam","log","mat","men","mix","mop","mug","nut","peg","pen","pet","pig","pin","pit","pop","ram","red","rug","run","six","sun","ten","top","wig","yam"],
+8:["bad","bank","bash","bat","bath","chair","cheap","chick","chin","chip","chop","did","dip","dish","ditch","fair","fish","hair","hip","hop","kick","mash","mat","match","math","much","mug","mush","must","sank","share","sheep","shin","ship","shop","sick","sip","sleep","sweep","tank","thank","thick","thin","tin","top","win","wish","witch","with"],
+9:["back","black","block","blush","bread","brush","bush","cab","cap","clap","clock","crab","crib","drip","flag","flap","grab","lack","lamp","lap","limp","lip","lump","neck","nest","net","next","pin","rip","rush","sack","shop","sip","skim","skin","slim","slip","snack","snap","snip","spin","spit","spot","stack","step","stop","swim","ten","tent","test","text","tip","top","tree","trip","win"],
+10:["bat","bet","bit","bite","cab","cap","cape","cob","cop","cope","cub","cube","cut","cute","hat","hate","hip","hit","hop","hope","hose","hot","kit","kite","mad","made","mode","mud","net","not","note","nut","pan","pane","pin","pine","red","rib","rid","ride","rob","robe","rod","rub","tab","tap","tape","tip","tub","tube","tug","type"],
+11:["ball","bat","beat","bell","bit","boat","boil","bowl","call","coal","cool","fat","feet","fit","foot","gate","get","goat","got","kill","man","mat","mean","meat","met","moan","moon","mute","pail","pal","peel","pool","rain","ran","red","rid","rim","road","rude","run","sad","sap","seed","side","sip","soap","soup","tail","tall","tame","team","tell","till","time","wake","walk","week","woke"],
+12:["base","best","bet","boat","cake","camp","case","class","cloud","coat","collect","connect","correct","crowd","damp","direct","dock","face","fight","gas","glass","goat","grass","house","kick","lake","lamp","light","lock","long","loud","make","mouse","mouth","net","night","pay","pink","play","pray","proud","rake","ramp","rest","right","rock","sick","sink","sock","song","south","strong","test","thick","think","tick","tray","vase","vest","vet","vote","wet","wink","wrong"],
+13:["boat","cape","feet","fish","light","made","nest","right","road","seed","ship","stop"]
+};
+const SOUNDS = "a b c d e f g h i j k l m n o p q r s t u v w x y z qu sh ch th st sp sl cl fl bl cr tr br ai ee ea oa oo".split(" ");
+
+const W2L = {};
+Object.keys(BY_LEVEL).forEach(lv => BY_LEVEL[lv].forEach(w => { (W2L[w] = W2L[w] || []).push(+lv); }));
+const WORDS = Object.keys(W2L).sort();
+
+/* ---------- tiny IndexedDB wrapper ---------- */
+function dbConn(){return new Promise((res,rej)=>{const r=indexedDB.open("mh-voice",1);
+  r.onupgradeneeded=()=>r.result.createObjectStore("clips",{keyPath:"key"});
+  r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);});}
+async function idbPut(rec){const db=await dbConn();return new Promise((res,rej)=>{const t=db.transaction("clips","readwrite");t.objectStore("clips").put(rec);t.oncomplete=()=>{db.close();res();};t.onerror=()=>rej(t.error);});}
+async function idbGet(key){const db=await dbConn();return new Promise((res,rej)=>{const t=db.transaction("clips","readonly");const q=t.objectStore("clips").get(key);q.onsuccess=()=>{db.close();res(q.result);};q.onerror=()=>rej(q.error);});}
+async function idbKeys(){const db=await dbConn();return new Promise((res,rej)=>{const t=db.transaction("clips","readonly");const q=t.objectStore("clips").getAllKeys();q.onsuccess=()=>{db.close();res(q.result);};q.onerror=()=>rej(q.error);});}
+
+const $ = s => document.querySelector(s);
+const cards = {};   // key -> {els, item}
+function toast(msg,ms){const t=$("#toast");t.textContent=msg;t.style.display="block";clearTimeout(t._t);t._t=setTimeout(()=>t.style.display="none",ms||2200);}
+
+function fileName(item){return item.label + "." + (item.ext || "mp3");}
+
+function makeCard(item){
+  const el = document.createElement("div");
+  el.className = "card"; el.dataset.key = item.key;
+  el.innerHTML = `<div class="w"></div><div class="fn"></div><div class="tags"></div>
+    <div class="row"><button class="rec" title="Record">●</button><button class="play" disabled title="Play back">▶</button><button class="dl" disabled title="Download file">⬇</button><button class="tts" title="Hear TTS reference">🔊</button></div>
+    <div class="st">not recorded</div>`;
+  el.querySelector(".w").textContent = item.label;
+  el.querySelector(".fn").textContent = fileName(item);
+  el.querySelector(".tags").textContent = item.group === "word" ? "L" + W2L[item.label].join(" · L") : "sound";
+  const rec = {item, el,
+    recBtn: el.querySelector(".rec"), playBtn: el.querySelector(".play"),
+    dlBtn: el.querySelector(".dl"), st: el.querySelector(".st"), fn: el.querySelector(".fn")};
+  rec.recBtn.addEventListener("click", () => toggleRecord(item.key));
+  rec.playBtn.addEventListener("click", async () => {
+    const r = await idbGet(item.key); if(!r) return;
+    new Audio(URL.createObjectURL(r.blob)).play();
+  });
+  rec.dlBtn.addEventListener("click", async () => {
+    const r = await idbGet(item.key); if(!r) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(r.blob); a.download = item.label + "." + r.ext;
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+  el.querySelector(".tts").addEventListener("click", () => {
+    try{ const u = new SpeechSynthesisUtterance(item.label); u.lang = "en-US"; u.rate = 0.85; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){}
+  });
+  cards[item.key] = rec;
+  return el;
+}
+
+async function refreshCard(key){
+  const c = cards[key]; if(!c) return;
+  const r = await idbGet(key);
+  const done = !!r;
+  c.el.classList.toggle("done", done);
+  c.playBtn.disabled = !done; c.dlBtn.disabled = !done;
+  if(done){ c.item.ext = r.ext; c.fn.textContent = fileName(c.item);
+    c.st.textContent = "✓ " + r.ext + " · " + (r.dur ? r.dur.toFixed(1) + "s" : "saved"); }
+  else { c.st.textContent = "not recorded"; }
+  updateProgress();
+}
+async function updateProgress(){
+  const keys = await idbKeys();
+  const w = keys.filter(k => String(k).startsWith("word:")).length;
+  const s = keys.filter(k => String(k).startsWith("sound:")).length;
+  $("#progress").textContent = `${w} / ${WORDS.length} words recorded` + (s ? ` · ${s} / ${SOUNDS.length} sounds` : "");
+  $("#bar i").style.width = (100 * w / WORDS.length) + "%";
+}
+
+/* ---------- recording ---------- */
+let stream = null, recorder = null, chunks = [], recKey = null, audioCtx = null;
+async function ensureMic(){
+  if(stream) return stream;
+  stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+  $("#micBtn").textContent = "🎤 Mic ready ✓";
+  return stream;
+}
+function pickMime(){
+  for(const t of ["audio/webm;codecs=opus","audio/webm","audio/mp4",""]){
+    try{ if(t === "" || MediaRecorder.isTypeSupported(t)) return t; }catch(e){ if(t === "") return t; }
+  }
+  return "";
+}
+async function toggleRecord(key){
+  if(recKey === key){ stopRecord(); return; }      // stop this one
+  if(recKey){ await stopRecord(); }                // stop any other, then start
+  try{ await ensureMic(); }catch(e){ toast("Microphone blocked — allow mic access and retry."); return; }
+  audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+  if(audioCtx.state === "suspended") await audioCtx.resume();
+  chunks = [];
+  recorder = new MediaRecorder(stream, {mimeType: pickMime()});
+  recorder.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
+  recorder.onstop = () => { const done = finishRecord(key); if(stopResolve){ done.finally(() => { const r = stopResolve; stopResolve = null; r(); }); } };
+  recKey = key;
+  const c = cards[key];
+  c.el.classList.add("recording"); c.recBtn.textContent = "■"; c.recBtn.classList.add("live");
+  c.st.textContent = "recording… press ■ to stop";
+  recorder.start();
+}
+let stopResolve = null;
+async function stopRecord(){
+  if(!recorder || recorder.state === "inactive"){ recKey = null; return; }
+  await new Promise(res => { stopResolve = res; recorder.stop(); });
+}
+function encodeWav(samples, sampleRate){
+  const n = samples.length, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const wstr = (o, s) => { for(let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  wstr(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); wstr(8, "WAVE"); wstr(12, "fmt ");
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, sampleRate, true); v.setUint32(28, sampleRate * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true); wstr(36, "data");
+  v.setUint32(40, n * 2, true);
+  for(let i = 0; i < n; i++){ const s = Math.max(-1, Math.min(1, samples[i])); v.setInt16(44 + i * 2, s * 32767, true); }
+  return new Blob([buf], {type: "audio/wav"});
+}
+async function finishRecord(key){
+  key = key || recKey;
+  const c = cards[key];
+  const blob = new Blob(chunks, {type: recorder.mimeType || "audio/webm"});
+  recKey = null;
+  if(c){ c.el.classList.remove("recording"); c.recBtn.textContent = "●"; c.recBtn.classList.remove("live"); c.st.textContent = "processing…"; }
+  try{
+    const buf = await audioCtx.decodeAudioData(await blob.arrayBuffer());
+    // mono mix
+    const ch0 = buf.getChannelData(0);
+    let mono;
+    if(buf.numberOfChannels > 1){
+      const ch1 = buf.getChannelData(1);
+      mono = new Float32Array(ch0.length);
+      for(let i = 0; i < mono.length; i++) mono[i] = (ch0[i] + ch1[i]) / 2;
+    } else mono = ch0;
+    const sr = buf.sampleRate;
+    // trim silence (threshold + padding)
+    const WIN = Math.floor(sr * 0.02), TH = 0.02, PAD = Math.floor(sr * 0.15);
+    const loud = i => { let s = 0; const n = Math.min(WIN, mono.length - i); for(let j = 0; j < n; j += 4) s += mono[i+j]*mono[i+j]; return Math.sqrt(s / (n/4)) > TH; };
+    let a = 0, b = mono.length;
+    while(a < b && !loud(a)) a += WIN;
+    while(b > a && !loud(Math.max(0, b - WIN))) b -= WIN;
+    a = Math.max(0, a - PAD); b = Math.min(mono.length, b + PAD);
+    const cut = mono.slice(a, b);
+    let outBlob, ext;
+    if(window.lamejs){
+      const enc = new lamejs.Mp3Encoder(1, sr, 128);
+      const i16 = new Int16Array(cut.length);
+      for(let i = 0; i < cut.length; i++){ const v = Math.max(-1, Math.min(1, cut[i])); i16[i] = v * 32767; }
+      const parts = [], CH = 1152;
+      for(let i = 0; i < i16.length; i += CH){ const d = enc.encodeBuffer(i16.subarray(i, i + CH)); if(d.length) parts.push(d); }
+      const end = enc.flush(); if(end.length) parts.push(end);
+      outBlob = new Blob(parts, {type: "audio/mp3"}); ext = "mp3";
+    } else {
+      outBlob = encodeWav(cut, sr); ext = "wav";
+    }
+    await idbPut({key, blob: outBlob, ext, dur: cut.length / sr, ts: Date.now()});
+    await refreshCard(key);
+    toast(cards[key].item.label + " saved ✓" + (ext === "wav" ? " (wav fallback — offline)" : ""));
+    if($("#autoNext").checked){
+      const nxt = nextMissing(key);
+      if(nxt){ const el = cards[nxt].el; el.scrollIntoView({block:"nearest",behavior:"smooth"});
+        el.style.outline = "4px solid #ff7a3d"; setTimeout(() => el.style.outline = "", 1200); }
+      else toast("All done! Use “Download all (.zip)” 🎉", 3500);
+    }
+  }catch(err){ console.error(err); if(c) c.st.textContent = "error — try again"; toast("Could not process recording."); }
+}
+function visibleKeys(){
+  const q = $("#search").value.trim().toLowerCase(), lv = +$("#levelFilter").value, hide = $("#hideDone").checked;
+  return Object.values(cards).filter(c => {
+    if(c.item.group !== "word") return false;
+    if(q && c.item.label.indexOf(q) < 0) return false;
+    if(lv && W2L[c.item.label].indexOf(lv) < 0) return false;
+    if(hide && c.el.classList.contains("done")) return false;
+    return true;
+  }).map(c => c.item.key);
+}
+function nextMissing(afterKey){
+  const vis = visibleKeys();
+  const after = vis.indexOf(afterKey);
+  for(const k of vis.slice(after + 1)) if(!cards[k].el.classList.contains("done")) return k;
+  for(const k of vis) if(!cards[k].el.classList.contains("done")) return k;
+  return null;
+}
+function applyFilters(){
+  const q = $("#search").value.trim().toLowerCase(), lv = +$("#levelFilter").value, hide = $("#hideDone").checked;
+  Object.values(cards).forEach(c => {
+    let show = true;
+    if(c.item.group === "word"){
+      if(q && c.item.label.indexOf(q) < 0) show = false;
+      if(lv && W2L[c.item.label].indexOf(lv) < 0) show = false;
+      if(hide && c.el.classList.contains("done")) show = false;
+    } else {
+      if(q && c.item.label.indexOf(q) < 0) show = false;
+    }
+    c.el.style.display = show ? "" : "none";
+  });
+}
+
+/* ---------- build UI ---------- */
+(function build(){
+  const wg = $("#wordGrid"), sg = $("#sndGrid");
+  WORDS.forEach(w => wg.appendChild(makeCard({key:"word:"+w, label:w, group:"word"})));
+  SOUNDS.forEach(s => sg.appendChild(makeCard({key:"sound:"+s, label:s, group:"sound"})));
+  const lf = $("#levelFilter");
+  Object.keys(BY_LEVEL).forEach(lv => {
+    const o = document.createElement("option");
+    o.value = lv; o.textContent = `Level ${lv} (${BY_LEVEL[lv].length})`;
+    lf.appendChild(o);
+  });
+  $("#wordCount").textContent = `(${WORDS.length} required)`;
+  $("#sndCount").textContent = `(${SOUNDS.length} optional)`;
+  $("#search").addEventListener("input", applyFilters);
+  $("#levelFilter").addEventListener("change", applyFilters);
+  $("#hideDone").addEventListener("change", applyFilters);
+  $("#micBtn").addEventListener("click", async () => {
+    try{ await ensureMic(); toast("Mic ready — press ● on any card."); }
+    catch(e){ toast("Microphone blocked — allow mic access and retry."); }
+  });
+  $("#zipBtn").addEventListener("click", async () => {
+    if(!window.JSZip){ toast("ZIP library not loaded (offline?). Download files one by one with ⬇."); return; }
+    const keys = await idbKeys();
+    if(!keys.length){ toast("Nothing recorded yet."); return; }
+    const zip = new JSZip();
+    for(const k of keys){
+      const r = await idbGet(k);
+      const label = String(k).split(":")[1];
+      const path = k.startsWith("sound:") ? "sounds/" + label + "." + r.ext : "voices/" + label + "." + r.ext;
+      zip.file(path, r.blob);
+    }
+    const blob = await zip.generateAsync({type:"blob"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "megane-hop-voice.zip";
+    document.body.appendChild(a); a.click(); a.remove();
+    toast(`Zipped ${keys.length} files ✓ — unzip into the game folder.`);
+  });
+  if(!window.MediaRecorder) toast("This browser can't record audio — use Chrome or Edge.");
+  if(!window.lamejs) toast("MP3 encoder offline — will save .wav instead.", 3500);
+  idbKeys().then(keys => Promise.all(keys.map(refreshCard))).then(updateProgress);
+})();
+</script>
+</body>
+</html>
