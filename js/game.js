@@ -1,7 +1,6 @@
 "use strict";
 /* ============================== LEVELS & QUESTIONS ============================== */
 const {DESTS,CHAPTERS,LEVELS}=COURSE;
-const ROWS=10;
 const PRAISE=['Great!','Yes!','Super!','Nice!','Perfect!','Good ear!'];
 const CHIPS={first:['First sound?','はじめの音は？'],last:['Last sound?','おわりの音は？'],word:['Which word?','どのことば？'],sound:['Which sound?','どの音？']};
 function lv(id){return LEVELS.find(L=>L.id===id);}
@@ -83,6 +82,7 @@ function rowWindow(){if(G.mode!=='run')return[0,G.rows.length];const a=Math.max(
 /* start loading the recordings a level will need */
 function preloadLevel(L,qs){
   const items=[];
+  COURSE.spokenSounds(L).forEach(snd=>items.push({snd}));
   qs.forEach(q=>items.push(qItem(q)));
   recPreload(items);
 }
@@ -158,8 +158,12 @@ function updateCat(c,dt){
 }
 
 /* ---------- flow ---------- */
+/* a 'hear the sound' question whose recording is missing turns into a normal
+   first-sound question (the backup voice says the example word instead) */
+function resolveQ(q){if(q&&q.type==='sound'&&recHas({snd:q.snd})===false){q.type='first';delete q.snd;}return q;}
+function chipFor(q){return CHIPS[resolveQ(q).type]||CHIPS.word;}
 function speakQ(slow){if(G.q)sayQ(G.q,{turtle:!!slow});}
-function setChip(q){const c=CHIPS[q.type]||CHIPS.word;$('#chip').innerHTML=`${c[0]} <span class="jp">${c[1]}</span>`;}
+function setChip(q){const c=chipFor(q);$('#chip').innerHTML=`${c[0]} <span class="jp">${c[1]}</span>`;}
 function activateRow(r){
   if(G.mode==='run'){
     ensureRows(r+6);

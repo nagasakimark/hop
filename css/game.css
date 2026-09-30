@@ -243,3 +243,11 @@ button:focus-visible{outline:4px solid var(--sun);outline-offset:3px}
 #toast.show{animation:toastIn .4s cubic-bezier(.3,1.6,.5,1)}
 @keyframes toastIn{from{transform:translate(-50%,-30px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
 @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms!important;transition-duration:.01ms!important} }
+/* level card: level number + chapter */
+#lvCard .lv-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#lvCard .lv-head .lv-num{align-self:auto}
+#lvCard .lv-ch{font-weight:700;font-size:17px;color:var(--ink2);display:inline-flex;align-items:center;gap:6px}
+#lvCard .lv-ch::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--chc);border:2px solid var(--ink)}
+/* lesson letter tiles are buttons that play the sound */
+button.gtile{cursor:pointer;font-family:var(--read);transition:transform .08s,box-shadow .08s}
+button.gtile:active{transform:translateY(5px);box-shadow:0 2px 0 rgba(16,32,58,.18)}

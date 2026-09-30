@@ -28,6 +28,7 @@ for(const k in THEMES){const T=THEMES[k];T.name=k;T.c={};['wall','wallDark','cop
 const W=1280,H=720,HY=212,F=539,CAM_BACK=3.5,CAM_Y=2.8;
 const ROW_DZ=2.3,TOP_Y=0.28,STONE_R=0.56,RIVAL_R=0.46,RIVAL_X=3.6;
 const RH=4.8,WALL_H=3.5,SLAB_TOP=0.22,CAT_H=0.92;
+const ROWS=10;            // stones per level
 let FZ=(ROWS+1)*ROW_DZ,ZB=FZ+2.7;   // finish slab and landmark; pushed far away in River Run
 const ARCH_X=2.45,ARCH_R=2.05,ARCH_CY=0.15;
 const cam={x:0,y:CAM_Y,z:-CAM_BACK};
