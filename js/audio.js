@@ -111,13 +111,14 @@ function playOne(it,opt,id){
     };
     const path=itemPath(it),a=recGet(path);
     if(!a)return fallback();
-    let to=0;
-    const cleanup=()=>{a.removeEventListener('ended',onEnd);a.removeEventListener('error',onErr);clearTimeout(to);};
-    const onEnd=()=>{cleanup();if(curAudio===a)curAudio=null;fin();};
-    const onErr=()=>{cleanup();if(curAudio===a)curAudio=null;REC.missing.add(path);fallback();};
+    let to=0,settled=false;
+    const cleanup=()=>{settled=true;a.removeEventListener('ended',onEnd);a.removeEventListener('error',onErr);clearTimeout(to);};
+    const onEnd=()=>{if(settled)return;cleanup();if(curAudio===a)curAudio=null;fin();};
+    // a missing file reports twice (the 'error' event and the rejected play()): react once
+    const onErr=()=>{if(settled)return;cleanup();if(curAudio===a)curAudio=null;REC.missing.add(path);if(it.snd&&typeof onSoundMissing==='function')onSoundMissing(it.snd);fallback();};
     a.addEventListener('ended',onEnd);a.addEventListener('error',onErr);
     // a file that never loads (slow disk / blocked) counts as missing after a while
-    to=setTimeout(()=>{cleanup();if(!REC.ok.has(path)&&a.readyState<2){REC.missing.add(path);try{a.pause();}catch(e){}fallback();}else fin();},5000);
+    to=setTimeout(()=>{if(settled)return;cleanup();if(!REC.ok.has(path)&&a.readyState<2){REC.missing.add(path);try{a.pause();}catch(e){}fallback();}else fin();},5000);
     try{if(!a.paused)a.pause();if(a.readyState>0)a.currentTime=0;}catch(e){}
     a.playbackRate=speedOf(opt,false);a.preservesPitch=true;a.mozPreservesPitch=true;a.webkitPreservesPitch=true;
     curAudio=a;
@@ -179,4 +180,5 @@ function soundItem(g,fb){const id=COURSE.soundId(g);return id?{snd:id,fb}:(fb?{t
 function qItem(q){return q.snd?{snd:q.snd,fb:q.say}:{w:q.say};}
 function sayQ(q,opt){return q?say(qItem(q),opt):Promise.resolve();}
 /* a recorded praise line, only if the recording exists (never the computer voice) */
+function withPhrase(id,items){return recHas({ph:id})===false?[].concat(items):[{ph:id}].concat(items);}
 function sayPhrase(id){if(recHas({ph:id})===false)return Promise.resolve();return say({ph:id});}

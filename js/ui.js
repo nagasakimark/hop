@@ -20,7 +20,7 @@ $('#btnListen .spk').innerHTML=ICON.speaker;$('#btnSlow').innerHTML=ICON.turtle;
 
 function show(id,on){const el=$(id);if(el)el.hidden=!on;}
 function toast(html,ms){const t=$('#toast');t.innerHTML=html;t.hidden=false;t.classList.remove('show');void t.offsetWidth;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>{t.hidden=true;},ms||2600);}
-function isUnlocked(id){return save.unlockAll||id===1||(save.stars[id-1]|0)>0||(save.stars[id]|0)>0;}
+function isUnlocked(id){return save.unlockAll||id===1||(save.stars[id-1]|0)>0||(save.stars[id]|0)>0||!!(save.open&&save.open[id]);}
 
 ICON.fish='<svg viewBox="0 0 38 26" aria-hidden="true"><path d="M3 13c5-9 17-10 25-3l6-6v18l-6-6c-8 7-20 6-25-3z" fill="#a9c3da" stroke="#1f2a44" stroke-width="2.4" stroke-linejoin="round"/><path d="M8 15c5 3 12 3 18-1" stroke="#fff" stroke-width="2" fill="none" opacity=".7"/><circle cx="10" cy="11" r="2.1" fill="#1f2a44"/><path d="M15 8.5q3 4.5 0 9" stroke="#1f2a44" stroke-width="1.8" fill="none"/></svg>';
 ICON.heart=on=>`<svg viewBox="0 0 24 24"><path d="M12 20.5s-8-4.9-8-10.6A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 8 2.7c0 5.7-8 10.6-8 10.6z" fill="${on?'#e5544a':'#dfe5ec'}" stroke="#1f2a44" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
@@ -35,6 +35,12 @@ function fishChip(n){return `${ICON.fish}<span>${n}</span>`;}
 function runUnlocked(){return save.unlockAll||LEVELS.some(L=>L.id>=3&&(save.stars[L.id]|0)>0);}
 function hideAll(){['#title','#map','#hud','#results','#pause','#lesson'].forEach(id=>show(id,0));}
 function stopSpeech(){voiceStop();}
+/* audio.js calls this when a letter-sound recording turns out to be missing */
+function onSoundMissing(snd){
+  if(G.screen==='play'&&G.q&&G.q.snd===snd){resolveQ(G.q);setChip(G.q);}
+  if(G.screen==='lesson'&&LS.phase==='practice'){const q=LS.qs[LS.qi];
+    if(q&&q.snd===snd){resolveQ(q);const t=$('#lsCard .ls-tip'),c=chipFor(q);if(t)t.innerHTML=`${c[0]}<span class="jp">${c[1]}</span>`;}}
+}
 
 function goTitle(){
   stopSpeech();G.screen='title';hideAll();show('#title',1);
@@ -149,6 +155,7 @@ function renderCard(){
   const best=save.best[L.id];const bestTxt=best===1?'<span class="crown">Won the race!</span>':best?`Best: ${ordinal(best)} place`:'';
   const d=DESTS[L.dest];
   const ch=CHAPTERS.find(c=>c.id===L.ch);
+  if(un)recPreload(COURSE.spokenSounds(L).map(snd=>({snd})));   // know which letter sounds exist before the race
   $('#lvCard').innerHTML=`<div class="lv-head"><span class="lv-num">Level ${L.id}</span><span class="lv-ch" style="--chc:${GROUP_COL[L.theme]}">Chapter ${ch.id} · ${ch.title}</span></div>
     <h2>${L.title}</h2><div class="jp">${L.jp}</div>
     <p class="how">${L.how}</p>
@@ -164,7 +171,7 @@ function renderCard(){
 function ordinal(n){return n+(n===1?'st':n===2?'nd':n===3?'rd':'th');}
 
 /* ---- lesson: learn cards → practice → race ---- */
-const LS={L:null,phase:'learn',card:0,qs:[],qi:0,miss:0,busy:false,expr:'idle'};
+const LS={L:null,phase:'learn',card:0,qs:[],qi:0,miss:0,busy:false,expr:'idle',act:0};
 function startLesson(L){
   ensureAudio();stopSpeech();
   setupLevel(L);G.screen='lesson';hideAll();show('#lesson',1);
@@ -221,12 +228,13 @@ function renderLesson(){
         <div style="display:flex;gap:12px">${LS.card>0?`<button class="btn ghost" id="lsBack">${ICON.back}Back</button>`:''}
         <button class="btn teal" id="lsHear">${ICON.speaker}Hear all</button>
         <button class="btn" id="lsNext">${LS.card<L.teach.length-1?'Next':'Practice'}${ICON.play}</button></div></div>`;
-    card.querySelectorAll('.wbtn[data-w]').forEach(b=>b.addEventListener('click',()=>{ensureAudio();say({w:b.dataset.w},{ttsRate:0.8});LS.expr='happy';drawLessonCat();}));
-    card.querySelectorAll('.gtile[data-snd]').forEach(b=>b.addEventListener('click',()=>{ensureAudio();say({snd:b.dataset.snd,fb:b.dataset.fb},{ttsRate:0.8});LS.expr='happy';drawLessonCat();}));
-    $('#lsHear').addEventListener('click',()=>{ensureAudio();sayCard(c);});
+    card.querySelectorAll('.wbtn[data-w]').forEach(b=>b.addEventListener('click',()=>{LS.act++;ensureAudio();say({w:b.dataset.w},{ttsRate:0.8});LS.expr='happy';drawLessonCat();}));
+    card.querySelectorAll('.gtile[data-snd]').forEach(b=>b.addEventListener('click',()=>{LS.act++;ensureAudio();say({snd:b.dataset.snd,fb:b.dataset.fb},{ttsRate:0.8});LS.expr='happy';drawLessonCat();}));
+    $('#lsHear').addEventListener('click',()=>{LS.act++;ensureAudio();sayCard(c);});
     $('#lsNext').addEventListener('click',()=>{SFX.click();if(LS.card<L.teach.length-1){LS.card++;renderLesson();}else startPractice();});
     const bk=$('#lsBack');if(bk)bk.addEventListener('click',()=>{SFX.click();LS.card--;renderLesson();});
-    setTimeout(()=>{if(G.screen==='lesson'&&LS.phase==='learn')sayCard(c);},350);
+    const ci=LS.card,act=LS.act;
+    setTimeout(()=>{if(G.screen==='lesson'&&LS.phase==='learn'&&LS.L===L&&LS.card===ci&&LS.act===act)sayCard(c);},350);
   }else if(LS.phase==='practice'){
     const q=LS.qs[LS.qi],chip=chipFor(q);
     card.innerHTML=lessonTop('Practice · れんしゅう')+`
@@ -239,7 +247,7 @@ function renderLesson(){
     $('#prListen').addEventListener('click',()=>{ensureAudio();sayQ(q);});
     $('#prSlow').addEventListener('click',()=>{ensureAudio();sayQ(q,{turtle:true});});
     card.querySelectorAll('.optbtn').forEach(b=>b.addEventListener('click',()=>practiceAnswer(b)));
-    setTimeout(()=>{if(G.screen==='lesson'&&LS.phase==='practice'&&LS.qs[LS.qi]===q)sayQ(q);},300);
+    setTimeout(()=>{if(G.screen==='lesson'&&LS.phase==='practice'&&LS.qs[LS.qi]===q)say(LS.qi===0?withPhrase('lets-practise',qItem(resolveQ(q))):qItem(resolveQ(q)));},300);
   }else{
     const d=DESTS[L.dest],first=!save.lessons[L.id];
     if(first){save.lessons[L.id]=true;save.fish+=5;persist();}
@@ -276,14 +284,15 @@ function practiceAnswer(b){
   if(o===q.ans){
     LS.busy=true;b.classList.add('good');SFX.good();LS.expr='happy';drawLessonCat();
     if(LS.miss===0)reviewDrop(q.lv,q.say);
-    fb.innerHTML=`${pick(PRAISE)} <span style="color:var(--ink2)">“${esc(q.type==='sound'?q.ans:q.say)}”</span>`;fb.style.color='var(--goodD)';
+    const pr=pick(PRAISE);sayPhrase(PRAISE_REC[pr]);
+    fb.innerHTML=`${pr} <span style="color:var(--ink2)">“${esc(q.type==='sound'?q.ans:q.say)}”</span>`;fb.style.color='var(--goodD)';
     setTimeout(()=>{if(LS.phase!=='practice')return;LS.qi++;LS.miss=0;LS.busy=false;if(LS.qi>=LS.qs.length)LS.phase='ready';renderLesson();},1100);
   }else{
     LS.miss++;b.classList.add('bad');SFX.bad();LS.expr='oops';drawLessonCat();
     reviewAdd(q.lv,q.say);persist();
     fb.textContent='Not quite. Listen again!';fb.style.color='var(--bad)';
     if(LS.miss>=2||q.opts.length===2)$('#lsCard').querySelectorAll('.optbtn').forEach(x=>{if(q.opts[+x.dataset.i]===q.ans)x.classList.add('hint');});
-    setTimeout(()=>{if(LS.phase==='practice'&&LS.qs[LS.qi]===q)sayQ(q,{ttsRate:0.75});},500);
+    setTimeout(()=>{if(LS.phase==='practice'&&LS.qs[LS.qi]===q)say(withPhrase('listen-again',qItem(resolveQ(q))),{ttsRate:0.75});},500);
   }
 }
 
@@ -335,7 +344,7 @@ function showResults(){
       <button class="btn teal" id="rAgain">${ICON.retry}Again</button>
       ${nextL?`<button class="btn" id="rNext" ${nextOpen?'':'disabled'}>Next${ICON.play}</button>`:''}
     </div>`;
-  show('#results',1);
+  show('#results',1);sayPhrase('you-did-it');
   const svgs=$('#resStars').querySelectorAll('svg');
   svgs.forEach((s,i)=>{if(i<stars)setTimeout(()=>{s.classList.add('on');SFX.star(i);},350+i*380);});
   bindResultWords();
@@ -384,7 +393,7 @@ function openSettings(){syncSettings();fillVoiceSelect();show('#settings',1);}
 $('#voiceSel').addEventListener('change',e=>{save.voice=e.target.value;persist();loadVoices();say({tts:'cat'});});   // test the computer voice itself
 $('#spdNormal').addEventListener('click',()=>{save.slow=false;persist();syncSettings();sayWord('ship');});
 $('#spdSlow').addEventListener('click',()=>{save.slow=true;persist();syncSettings();sayWord('ship');});
-function setGfx(m){save.gfx=m;if(m==='auto'){GFX.i=0;GFX.bad=0;save.gfxBudget=0;}persist();syncSettings();fit();SFX.click();}
+function setGfx(m){save.gfx=m;if(m==='auto'){GFX.i=0;GFX.bad=0;GFX.good=0;save.gfxBudget=0;}persist();syncSettings();fit();SFX.click();}
 $('#gfxAuto').addEventListener('click',()=>setGfx('auto'));
 $('#gfxHigh').addEventListener('click',()=>setGfx('high'));
 $('#gfxFast').addEventListener('click',()=>setGfx('fast'));
@@ -393,7 +402,7 @@ $('#swSfx').addEventListener('click',()=>{save.sfx=!save.sfx;persist();syncSetti
 $('#swUnlock').addEventListener('click',()=>{save.unlockAll=!save.unlockAll;persist();syncSettings();if(G.screen==='map')buildMap(mapSel);if(G.screen==='title')refreshTitle();});
 $('#btnReset').addEventListener('click',e=>{const b=e.currentTarget;
   if(!b.classList.contains('armed')){b.classList.add('armed');b.textContent='Tap again to reset';return;}
-  Object.assign(save,{stars:{},best:{},lessons:{},review:{},fish:0,owned:{},look:Object.assign({},DEFAULT_LOOK),heart:false,runBest:0,lastDay:''});persist();
+  Object.assign(save,{stars:{},best:{},lessons:{},review:{},fish:0,owned:{},look:Object.assign({},DEFAULT_LOOK),heart:false,runBest:0,lastDay:'',open:{}});persist();
   for(const k in iconCache)delete iconCache[k];syncSettings();
   toast('Progress reset.');if(G.screen==='map')buildMap(1);if(G.screen==='title')goTitle();});
 $('#btnSetClose').addEventListener('click',()=>{SFX.click();show('#settings',0);});

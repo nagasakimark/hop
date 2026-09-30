@@ -51,7 +51,7 @@ function gfxLevels(){
   [0.85,0.72,0.6].forEach(v=>{if(v<l[l.length-1]-0.01)l.push(v);});
   return l;
 }
-const GFX={i:0,n:0,sum:0,bad:0,t0:0};
+const GFX={i:0,n:0,sum:0,bad:0,good:0,floor:0,fn:0};
 function gfxIndex(){
   const L=gfxLevels();
   if(save.gfx==='high')return 0;
@@ -69,17 +69,28 @@ function fit(){
 /* start one step sharper than last time, so a computer that got faster (or a
    one-off slow moment) doesn't stay blurry forever */
 GFX.i=Math.max(0,(save.gfxBudget|0)-1);
-/* called every frame with the frame time. Only frames where the whole scene had to be
-   drawn count (the camera moving), because those are the slow ones. */
+/* Called every frame with the time since the last frame.
+   - Cheap frames (scenery copied from the cache) show how fast the screen/browser lets
+     us go at best: 16.7 ms on a normal 60 Hz screen, 33 ms with a 30 Hz screen or
+     Chrome's battery saver. That is the "floor".
+   - Full frames (camera moving) are the slow ones. Only if they are well above the
+     floor is the computer struggling, and the resolution steps down.
+   - A level that has run well for a while is remembered, so the sharper start sticks. */
 function gfxSample(ms,full){
-  if(save.gfx!=='auto'||document.hidden||!full||ms>200)return;
-  if(G.screen!=='play'&&G.screen!=='title'){GFX.n=0;GFX.sum=0;return;}
+  if(save.gfx!=='auto'||document.hidden||ms>200)return;
+  if(G.screen!=='play'){GFX.n=0;GFX.sum=0;return;}
+  // floor = the low end of cheap-frame times (follows fast frames quickly, slow ones slowly)
+  if(!full){GFX.fn++;GFX.floor=GFX.fn===1?ms:GFX.floor+(ms-GFX.floor)*(ms<GFX.floor?0.3:0.01);return;}
+  if(GFX.fn<30)return;                             // don't judge until the floor is known
   GFX.n++;GFX.sum+=ms;
   if(GFX.n<45)return;
   const avg=GFX.sum/GFX.n;GFX.n=0;GFX.sum=0;
-  if(avg>24){GFX.bad++;}else GFX.bad=0;          // slower than ~40 frames a second
+  const limit=Math.max(24,GFX.floor*1.4);         // ~40 fps on a 60 Hz screen
+  if(avg>limit){GFX.bad++;GFX.good=0;}else{GFX.bad=0;GFX.good++;}
   if(GFX.bad>=2&&GFX.i<gfxLevels().length-1){
     GFX.i++;GFX.bad=0;save.gfxBudget=GFX.i;persist();fit();
+  }else if(GFX.good>=4&&(save.gfxBudget|0)>GFX.i){
+    save.gfxBudget=GFX.i;persist();              // this sharper level is fine here: keep it
   }
 }
 window.addEventListener('resize',fit);
@@ -252,9 +263,23 @@ function drawWater(T){
 function drawWallReflections(T){
   for(const side of[-1,1]){const x=side*RH;poly([[x,0,cam.z+0.15],[x,0,cam.z+140],[x,-WALL_H*0.9,cam.z+140],[x,-WALL_H*0.9,cam.z+0.15]],rgb(T.c.wallDark,0.22));}
 }
+/* The open water: between the walls, in front of a bridge, and between the stone steps.
+   Moving things on the water are clipped to it, because they are now drawn after the
+   walls and the landmark and must not paint over them. */
+function clipOpenWater(){
+  const zn=cam.z+0.15,far=cam.z+140;
+  let pts;
+  if(G.dest==='steps'){const zs=FZ+0.75,xi=RH-1.25;
+    pts=[[-RH,zn],[-RH,zs],[-xi,zs],[-xi,far],[xi,far],[xi,zs],[RH,zs],[RH,zn]];}
+  else{const zf=G.dest?ZB-0.5:far;pts=[[-RH,zn],[-RH,zf],[RH,zf],[RH,zn]];}
+  ctx.beginPath();let first=true;
+  for(const[x,z]of pts){const q=P(x,0,Math.max(z,zn));if(!q)continue;if(first){ctx.moveTo(q.x,q.y);first=false;}else ctx.lineTo(q.x,q.y);}
+  ctx.closePath();ctx.clip();
+}
 function drawWaterLife(T){
   // light moving across the bridge's reflection (the "spectacles")
   drawShimmer(T);
+  ctx.save();clipOpenWater();
   // koi under the surface
   for(const k of G.koi){
     if(k.z-cam.z<1||k.z>ZB-1)continue;
@@ -279,6 +304,7 @@ function drawWaterLife(T){
   // rings
   for(const r of G.rings){const u=r.t/r.max;const e=gEll(r.x,0,r.z,r.r*(0.6+u*1.2),r.r*(0.6+u*1.2));if(!e)continue;
     ctx.strokeStyle=`rgba(255,255,255,${(1-u)*0.6})`;ctx.lineWidth=Math.max(1,0.04*e.s);ctx.beginPath();ctx.ellipse(e.x,e.y,e.rx,e.ry,0,0,TAU);ctx.stroke();}
+  ctx.restore();
 }
 /* brick colour by brick and fog step, kept per theme */
 const brickCache={};

@@ -30,6 +30,9 @@
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
   .card{background:#fff;border-radius:16px;border:3px solid var(--ink);padding:8px 10px;display:flex;flex-direction:column;gap:4px}
   .card.done{border-color:var(--good);background:#effaf2}
+  .card.infolder{border-color:#56b7e6;background:#eef7fd}
+  .card.infolder .st{color:#1c6d9a}
+  .card .new{display:inline-block;background:var(--accent);color:#fff;border-radius:6px;padding:0 6px;margin-left:4px;font-size:11px}
   .card.recording{border-color:var(--bad);background:#fdeceb}
   .card .w{font-size:30px;font-weight:800;line-height:1.05;word-break:break-word}
   .card .fn{font-size:12px;color:#68768f;font-weight:700;font-family:monospace}
@@ -48,15 +51,15 @@
 <body>
 <header>
   <h1>🎙️ Megane Hop — Voice Studio</h1>
-  <p>Record every word below, one file per word. Files save as <b>sun.mp3</b>, <b>ship.mp3</b>, … into a <b>voices/</b> folder the game can later use. Progress is saved in this browser.</p>
+  <p>Record each word below, one file per word. Words save as <b>voices/sun.mp3</b>, sounds as <b>sounds/s.mp3</b>. The list comes straight from the game's course, so it always matches what the game says. Anything not recorded is spoken by the computer voice instead.</p>
   <div id="bar"><i></i></div>
-  <p id="progress">0 / 371 words recorded</p>
+  <p id="progress">checking…</p>
 </header>
 <div id="toolbar">
   <button class="btn teal" id="micBtn">🎤 Enable microphone</button>
   <select id="levelFilter"><option value="0">All levels</option></select>
   <input type="search" id="search" placeholder="Search word…">
-  <label class="chk"><input type="checkbox" id="hideDone"> hide recorded</label>
+  <label class="chk"><input type="checkbox" id="hideDone"> hide recorded / already in folder</label>
   <label class="chk"><input type="checkbox" id="autoNext" checked> auto-next</label>
   <span class="spacer"></span>
   <button class="btn go" id="zipBtn">⬇ Download all (.zip)</button>
@@ -65,40 +68,39 @@
   <div class="how">
     <b>How to record:</b> 1) Enable microphone &nbsp;2) press <b>●</b> on a card, say the word clearly, press <b>■</b> &nbsp;3) press <b>▶</b> to check it, re-record if needed.
     Silence at the start/end is trimmed automatically. Tip: record in a quiet room, keep the same distance from the mic, and say each word the way you want kids to hear it in the game.
-    If the MP3 encoder can't load (offline), files fall back to <code>.wav</code> — same names, still fine.
+    <br><b>Already recorded?</b> Cards turn <span style="color:#1c6d9a">blue</span> when the file is already in the game's <code>voices/</code>, <code>sounds/</code> or <code>phrases/</code> folder, so you only need to record what's left. (This check works when this page is opened from the game folder.)
+    <br>The game plays <code>.mp3</code> files. If the MP3 encoder can't load (offline), recordings are saved as <code>.wav</code>, which the game can't use — record those again when you're online.
   </div>
   <h2>Words <small id="wordCount"></small></h2>
-  <p class="sub">Required — these are all 371 distinct words the game can speak (quiz questions, lessons, practice, review).</p>
+  <p class="sub">Every word the game can speak (questions, lessons, practice, review). <span id="newNote"></span></p>
   <div class="grid" id="wordGrid"></div>
   <h2>Letter &amp; pattern sounds <small id="sndCount"></small></h2>
-  <p class="sub">Optional — the game does <b>not</b> speak these yet (letters are shown, not spoken), but recording them now means a future update can voice them too.</p>
+  <p class="sub">Lessons say these before the example words ("sss… sun, sock"), and the early levels ask "hear the sound, pick the letter". Say just the sound, not the letter name. Without a recording the game skips the sound and uses the example word.</p>
   <div class="grid" id="sndGrid"></div>
+  <h2>Praise <small id="phCount"></small></h2>
+  <p class="sub">Optional. Short cheers in your voice. The computer voice never says these.</p>
+  <div class="grid" id="phGrid"></div>
 </main>
 <div id="toast"></div>
 
+<script src="js/course.js"></script>
 <script>
 "use strict";
-/* Word -> not needed; level -> words (extracted from index.html LEVELS + teach cards) */
-const BY_LEVEL = {
-1:["alligator","ant","apple","astronaut","igloo","ink","insect","itchy","net","nine","nose","nut","pan","pen","pig","pizza","sad","six","sock","sun","ten","tiger","top","tub"],
-2:["cake","cat","cow","cup","desk","dig","dog","duck","egg","elbow","elephant","envelope","hat","hen","horse","hug","key","kid","king","kite","map","milk","moon","mop","rabbit","red","rug","run"],
-3:["bat","bed","box","bus","fan","fish","fox","frog","game","gift","goat","gum","leg","lemon","lion","log","octopus","olive","otter","ox","umbrella","uncle","under","up"],
-4:["jam","jelly","jet","jump","queen","quick","quilt","quiz","van","vest","vet","violin","web","wet","wind","window","yak","yellow","yes","yo-yo","zebra","zero","zip","zoo"],
-5:["ax","bag","bed","box","bug","bus","cap","cat","cup","dog","drum","fox","gas","gum","ham","hat","jam","leg","lid","map","mud","net","nut","pen","pig","pin","red","sad","ship","sit","six","sun","swim","ten","top","van","yes"],
-6:["bad","bag","bed","beg","big","bud","bug","cap","cat","cop","cup","dig","dog","dug","fan","fin","fun","ham","hat","him","hit","hot","hum","hut","lap","lip","lop","net","not","nut","pan","pat","pen","pet","pig","pin","pit","pot","rag","rig","rug","sat","set","sit","sun","tap","tip","top"],
-7:["bat","bed","beg","big","box","bug","bun","bus","can","cap","cat","cub","cup","cut","dig","dog","dot","fed","fix","fog","fox","fun","ham","hat","hen","hog","hop","hug","hut","jam","log","mat","men","mix","mop","mug","nut","peg","pen","pet","pig","pin","pit","pop","ram","red","rug","run","six","sun","ten","top","wig","yam"],
-8:["bad","bank","bash","bat","bath","chair","cheap","chick","chin","chip","chop","did","dip","dish","ditch","fair","fish","hair","hip","hop","kick","mash","mat","match","math","much","mug","mush","must","sank","share","sheep","shin","ship","shop","sick","sip","sleep","sweep","tank","thank","thick","thin","tin","top","win","wish","witch","with"],
-9:["back","black","block","blush","bread","brush","bush","cab","cap","clap","clock","crab","crib","drip","flag","flap","grab","lack","lamp","lap","limp","lip","lump","neck","nest","net","next","pin","rip","rush","sack","shop","sip","skim","skin","slim","slip","snack","snap","snip","spin","spit","spot","stack","step","stop","swim","ten","tent","test","text","tip","top","tree","trip","win"],
-10:["bat","bet","bit","bite","cab","cap","cape","cob","cop","cope","cub","cube","cut","cute","hat","hate","hip","hit","hop","hope","hose","hot","kit","kite","mad","made","mode","mud","net","not","note","nut","pan","pane","pin","pine","red","rib","rid","ride","rob","robe","rod","rub","tab","tap","tape","tip","tub","tube","tug","type"],
-11:["ball","bat","beat","bell","bit","boat","boil","bowl","call","coal","cool","fat","feet","fit","foot","gate","get","goat","got","kill","man","mat","mean","meat","met","moan","moon","mute","pail","pal","peel","pool","rain","ran","red","rid","rim","road","rude","run","sad","sap","seed","side","sip","soap","soup","tail","tall","tame","team","tell","till","time","wake","walk","week","woke"],
-12:["base","best","bet","boat","cake","camp","case","class","cloud","coat","collect","connect","correct","crowd","damp","direct","dock","face","fight","gas","glass","goat","grass","house","kick","lake","lamp","light","lock","long","loud","make","mouse","mouth","net","night","pay","pink","play","pray","proud","rake","ramp","rest","right","rock","sick","sink","sock","song","south","strong","test","thick","think","tick","tray","vase","vest","vet","vote","wet","wink","wrong"],
-13:["boat","cape","feet","fish","light","made","nest","right","road","seed","ship","stop"]
-};
-const SOUNDS = "a b c d e f g h i j k l m n o p q r s t u v w x y z qu sh ch th st sp sl cl fl bl cr tr br ai ee ea oa oo".split(" ");
-
+/* ---------- what to record: read from the game's course (js/course.js) ---------- */
+const BY_LEVEL = {};
+COURSE.LEVELS.forEach(L => BY_LEVEL[L.id] = COURSE.spokenWords(L));
 const W2L = {};
 Object.keys(BY_LEVEL).forEach(lv => BY_LEVEL[lv].forEach(w => { (W2L[w] = W2L[w] || []).push(+lv); }));
 const WORDS = Object.keys(W2L).sort();
+const S2L = {};
+COURSE.LEVELS.forEach(L => COURSE.spokenSounds(L).forEach(f => { (S2L[f] = S2L[f] || []).push(L.id); }));
+// the backup word for hearing a sound: "as in thin" -> thin
+const SOUNDS = COURSE.SOUNDS.map(s => { const m = /as in ([a-z]+)/.exec(s.t); return {f: s.f, t: s.t, say: m ? m[1] : s.f}; });
+const PHRASES = COURSE.PHRASES;
+const NEW_SOUNDS = new Set("ng nk sn sk sw gl pl gr dr pr nt mp nd igh u-e ow oi ar or er".split(" "));
+/* words and sounds added with the 23-level course (the first voice pack didn't have them) */
+const NEW_WORDS = new Set("arm bird boy burn car coin cone corn down farm fork girl hand her horn jar oil owl park pond ring sand shirt sing star storm thing town toy turn wing".split(" "));
+
 
 /* ---------- tiny IndexedDB wrapper ---------- */
 function dbConn(){return new Promise((res,rej)=>{const r=indexedDB.open("mh-voice",1);
@@ -106,13 +108,14 @@ function dbConn(){return new Promise((res,rej)=>{const r=indexedDB.open("mh-voic
   r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);});}
 async function idbPut(rec){const db=await dbConn();return new Promise((res,rej)=>{const t=db.transaction("clips","readwrite");t.objectStore("clips").put(rec);t.oncomplete=()=>{db.close();res();};t.onerror=()=>rej(t.error);});}
 async function idbGet(key){const db=await dbConn();return new Promise((res,rej)=>{const t=db.transaction("clips","readonly");const q=t.objectStore("clips").get(key);q.onsuccess=()=>{db.close();res(q.result);};q.onerror=()=>rej(q.error);});}
+async function idbDel(key){const db=await dbConn();return new Promise((res,rej)=>{const t=db.transaction("clips","readwrite");t.objectStore("clips").delete(key);t.oncomplete=()=>{db.close();res();};t.onerror=()=>rej(t.error);});}
 async function idbKeys(){const db=await dbConn();return new Promise((res,rej)=>{const t=db.transaction("clips","readonly");const q=t.objectStore("clips").getAllKeys();q.onsuccess=()=>{db.close();res(q.result);};q.onerror=()=>rej(q.error);});}
 
 const $ = s => document.querySelector(s);
 const cards = {};   // key -> {els, item}
 function toast(msg,ms){const t=$("#toast");t.textContent=msg;t.style.display="block";clearTimeout(t._t);t._t=setTimeout(()=>t.style.display="none",ms||2200);}
 
-function fileName(item){return item.label + "." + (item.ext || "mp3");}
+function fileName(item){return item.file + "." + (item.ext || "mp3");}
 
 function makeCard(item){
   const el = document.createElement("div");
@@ -122,7 +125,7 @@ function makeCard(item){
     <div class="st">not recorded</div>`;
   el.querySelector(".w").textContent = item.label;
   el.querySelector(".fn").textContent = fileName(item);
-  el.querySelector(".tags").textContent = item.group === "word" ? "L" + W2L[item.label].join(" · L") : "sound";
+  el.querySelector(".tags").innerHTML = (item.levels.length ? "L" + item.levels.join(" · L") : item.group) + (item.isNew ? '<span class="new">new</span>' : "");
   const rec = {item, el,
     recBtn: el.querySelector(".rec"), playBtn: el.querySelector(".play"),
     dlBtn: el.querySelector(".dl"), st: el.querySelector(".st"), fn: el.querySelector(".fn")};
@@ -134,11 +137,11 @@ function makeCard(item){
   rec.dlBtn.addEventListener("click", async () => {
     const r = await idbGet(item.key); if(!r) return;
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(r.blob); a.download = item.label + "." + r.ext;
+    a.href = URL.createObjectURL(r.blob); a.download = item.file + "." + r.ext;
     document.body.appendChild(a); a.click(); a.remove();
   });
   el.querySelector(".tts").addEventListener("click", () => {
-    try{ const u = new SpeechSynthesisUtterance(item.label); u.lang = "en-US"; u.rate = 0.85; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){}
+    try{ const u = new SpeechSynthesisUtterance(item.say || item.label); u.lang = "en-US"; u.rate = 0.85; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){}
   });
   cards[item.key] = rec;
   return el;
@@ -152,13 +155,15 @@ async function refreshCard(key){
   c.playBtn.disabled = !done; c.dlBtn.disabled = !done;
   if(done){ c.item.ext = r.ext; c.fn.textContent = fileName(c.item);
     c.st.textContent = "✓ " + r.ext + " · " + (r.dur ? r.dur.toFixed(1) + "s" : "saved"); }
-  else { c.st.textContent = "not recorded"; }
+  else { c.st.textContent = c.inFolder ? "✓ already in " + c.item.dir + "/ folder" : "not recorded"; }
   updateProgress();
 }
 async function updateProgress(){
   const keys = await idbKeys();
-  const w = keys.filter(k => String(k).startsWith("word:")).length;
-  const s = keys.filter(k => String(k).startsWith("sound:")).length;
+  const live = keys.filter(k => cards[k]);
+  Object.values(cards).forEach(c => { if(c.inFolder && live.indexOf(c.item.key) < 0) live.push(c.item.key); });
+  const w = live.filter(k => String(k).startsWith("word:")).length;
+  const s = live.filter(k => String(k).startsWith("sound:")).length;
   $("#progress").textContent = `${w} / ${WORDS.length} words recorded` + (s ? ` · ${s} / ${SOUNDS.length} sounds` : "");
   $("#bar i").style.width = (100 * w / WORDS.length) + "%";
 }
@@ -226,13 +231,21 @@ async function finishRecord(key){
       for(let i = 0; i < mono.length; i++) mono[i] = (ch0[i] + ch1[i]) / 2;
     } else mono = ch0;
     const sr = buf.sampleRate;
-    // trim silence (threshold + padding)
-    const WIN = Math.floor(sr * 0.02), TH = 0.02, PAD = Math.floor(sr * 0.15);
-    const loud = i => { let s = 0; const n = Math.min(WIN, mono.length - i); for(let j = 0; j < n; j += 4) s += mono[i+j]*mono[i+j]; return Math.sqrt(s / (n/4)) > TH; };
-    let a = 0, b = mono.length;
-    while(a < b && !loud(a)) a += WIN;
-    while(b > a && !loud(Math.max(0, b - WIN))) b -= WIN;
-    a = Math.max(0, a - PAD); b = Math.min(mono.length, b + PAD);
+    // trim silence: low threshold + fine steps + hysteresis (several quiet
+    // windows in a row before cutting) + generous end padding so soft
+    // endings (-s, -sh, -th, fading vowels) are never clipped
+    const WIN = Math.floor(sr * 0.02), HOP = Math.floor(sr * 0.01), TH = 0.008;
+    const PAD_START = Math.floor(sr * 0.12), PAD_END = Math.floor(sr * 0.35);
+    const rmsAt = i => { let s = 0, n = 0; const end = Math.min(WIN, mono.length - i); for(let j = 0; j < end; j += 2){ s += mono[i+j]*mono[i+j]; n++; } return Math.sqrt(s / Math.max(1, n)); };
+    let a = 0;
+    while(a < mono.length && rmsAt(a) <= TH) a += HOP;
+    a = Math.max(0, a - PAD_START);
+    // end: scan forward from the start, remembering the last loud window,
+    // so brief dips inside the word can never trigger an early cut
+    let lastLoud = a;
+    for(let i = a; i < mono.length; i += HOP){ if(rmsAt(i) > TH) lastLoud = i; }
+    let b = Math.min(mono.length, lastLoud + WIN + PAD_END);
+    if(b <= a) { a = 0; b = mono.length; } // safety: never output empty
     const cut = mono.slice(a, b);
     let outBlob, ext;
     if(window.lamejs){
@@ -246,7 +259,7 @@ async function finishRecord(key){
     } else {
       outBlob = encodeWav(cut, sr); ext = "wav";
     }
-    await idbPut({key, blob: outBlob, ext, dur: cut.length / sr, ts: Date.now()});
+    await idbPut({key, file: cards[key].item.file, blob: outBlob, ext, dur: cut.length / sr, ts: Date.now()});
     await refreshCard(key);
     toast(cards[key].item.label + " saved ✓" + (ext === "wav" ? " (wav fallback — offline)" : ""));
     if($("#autoNext").checked){
@@ -257,21 +270,22 @@ async function finishRecord(key){
     }
   }catch(err){ console.error(err); if(c) c.st.textContent = "error — try again"; toast("Could not process recording."); }
 }
-function visibleKeys(){
+function isDone(c){ return c.el.classList.contains("done") || c.inFolder; }
+function visibleKeys(group){
   const q = $("#search").value.trim().toLowerCase(), lv = +$("#levelFilter").value, hide = $("#hideDone").checked;
   return Object.values(cards).filter(c => {
-    if(c.item.group !== "word") return false;
+    if(c.item.group !== (group || "word")) return false;
     if(q && c.item.label.indexOf(q) < 0) return false;
-    if(lv && W2L[c.item.label].indexOf(lv) < 0) return false;
-    if(hide && c.el.classList.contains("done")) return false;
+    if(lv && c.item.levels.indexOf(lv) < 0) return false;
+    if(hide && isDone(c)) return false;
     return true;
   }).map(c => c.item.key);
 }
 function nextMissing(afterKey){
-  const vis = visibleKeys();
+  const vis = visibleKeys(cards[afterKey] ? cards[afterKey].item.group : "word");
   const after = vis.indexOf(afterKey);
-  for(const k of vis.slice(after + 1)) if(!cards[k].el.classList.contains("done")) return k;
-  for(const k of vis) if(!cards[k].el.classList.contains("done")) return k;
+  for(const k of vis.slice(after + 1)) if(!isDone(cards[k])) return k;
+  for(const k of vis) if(!isDone(cards[k])) return k;
   return null;
 }
 function applyFilters(){
@@ -280,10 +294,12 @@ function applyFilters(){
     let show = true;
     if(c.item.group === "word"){
       if(q && c.item.label.indexOf(q) < 0) show = false;
-      if(lv && W2L[c.item.label].indexOf(lv) < 0) show = false;
-      if(hide && c.el.classList.contains("done")) show = false;
+      if(lv && c.item.levels.indexOf(lv) < 0) show = false;
+      if(hide && isDone(c)) show = false;
     } else {
       if(q && c.item.label.indexOf(q) < 0) show = false;
+      if(lv && c.item.levels.indexOf(lv) < 0) show = false;
+      if(hide && isDone(c)) show = false;
     }
     c.el.style.display = show ? "" : "none";
   });
@@ -291,17 +307,20 @@ function applyFilters(){
 
 /* ---------- build UI ---------- */
 (function build(){
-  const wg = $("#wordGrid"), sg = $("#sndGrid");
-  WORDS.forEach(w => wg.appendChild(makeCard({key:"word:"+w, label:w, group:"word"})));
-  SOUNDS.forEach(s => sg.appendChild(makeCard({key:"sound:"+s, label:s, group:"sound"})));
+  const wg = $("#wordGrid"), sg = $("#sndGrid"), pg = $("#phGrid");
+  WORDS.forEach(w => wg.appendChild(makeCard({key:"word:"+w, label:w, file:w, say:w, group:"word", dir:"voices", levels:W2L[w], isNew:NEW_WORDS.has(w)})));
+  SOUNDS.forEach(s => sg.appendChild(makeCard({key:"sound:"+s.f, label:s.t, file:s.f, say:s.say, group:"sound", dir:"sounds", levels:S2L[s.f] || [], isNew:NEW_SOUNDS.has(s.f)})));
+  PHRASES.forEach(p => pg.appendChild(makeCard({key:"phrase:"+p.f, label:p.t, file:p.f, say:p.t, group:"phrase", dir:"phrases", levels:[]})));
   const lf = $("#levelFilter");
-  Object.keys(BY_LEVEL).forEach(lv => {
+  COURSE.LEVELS.forEach(L => {
     const o = document.createElement("option");
-    o.value = lv; o.textContent = `Level ${lv} (${BY_LEVEL[lv].length})`;
+    o.value = L.id; o.textContent = `Level ${L.id}: ${L.title} (${BY_LEVEL[L.id].length})`;
     lf.appendChild(o);
   });
-  $("#wordCount").textContent = `(${WORDS.length} required)`;
-  $("#sndCount").textContent = `(${SOUNDS.length} optional)`;
+  $("#wordCount").textContent = `(${WORDS.length})`;
+  $("#sndCount").textContent = `(${SOUNDS.length})`;
+  $("#phCount").textContent = `(${PHRASES.length}, optional)`;
+  $("#newNote").innerHTML = `Cards marked <span class="new" style="background:var(--accent);color:#fff;border-radius:6px;padding:0 6px">new</span> were added with the 23-level course.`;
   $("#search").addEventListener("input", applyFilters);
   $("#levelFilter").addEventListener("change", applyFilters);
   $("#hideDone").addEventListener("change", applyFilters);
@@ -316,8 +335,10 @@ function applyFilters(){
     const zip = new JSZip();
     for(const k of keys){
       const r = await idbGet(k);
-      const label = String(k).split(":")[1];
-      const path = k.startsWith("sound:") ? "sounds/" + label + "." + r.ext : "voices/" + label + "." + r.ext;
+      if(!r) continue;
+      const fname = r.file || String(k).split(":")[1];
+      const dir = k.startsWith("sound:") ? "sounds/" : k.startsWith("phrase:") ? "phrases/" : "voices/";
+      const path = dir + fname + "." + r.ext;
       zip.file(path, r.blob);
     }
     const blob = await zip.generateAsync({type:"blob"});
@@ -328,8 +349,40 @@ function applyFilters(){
   });
   if(!window.MediaRecorder) toast("This browser can't record audio — use Chrome or Edge.");
   if(!window.lamejs) toast("MP3 encoder offline — will save .wav instead.", 3500);
-  idbKeys().then(keys => Promise.all(keys.map(refreshCard))).then(updateProgress);
+  // one-time migration: old single slots (ea/th/oo) move to their primary variant
+  [["sound:ea","sound:ea-team"],["sound:th","sound:th-thin"],["sound:oo","sound:oo-moon"]].forEach(async ([o,n]) => {
+    const r = await idbGet(o);
+    if(r && !(await idbGet(n))){
+      await idbPut({key:n, file:n.split(":")[1], blob:r.blob, ext:r.ext, dur:r.dur, ts:r.ts});
+      await idbDel(o);
+    }
+    refreshCard(n);
+  });
+  idbKeys().then(keys => Promise.all(keys.map(refreshCard))).then(updateProgress).then(probeFolder);
 })();
+
+/* ---------- which files are already in the game folder? ----------
+   Loads each file's header (a few at a time) the same way the game will. */
+function probeFolder(){
+  const list = Object.values(cards);
+  let i = 0, found = 0;
+  const one = () => new Promise(res => {
+    const c = list[i++]; if(!c) return res(false);
+    const a = new Audio(); a.preload = "metadata";
+    let done = false; const fin = ok => { if(done) return; done = true; a.removeAttribute("src"); try{ a.load(); }catch(e){}
+      if(ok){ c.inFolder = true; found++; c.el.classList.add("infolder"); if(!c.el.classList.contains("done")) c.st.textContent = "✓ already in " + c.item.dir + "/ folder"; }
+      res(true); };
+    a.addEventListener("loadedmetadata", () => fin(true), {once:true});
+    a.addEventListener("error", () => fin(false), {once:true});
+    setTimeout(() => fin(false), 4000);
+    a.src = c.item.dir + "/" + encodeURIComponent(c.item.file) + ".mp3";
+  });
+  const worker = async () => { while(i < list.length) await one(); };
+  return Promise.all([worker(), worker(), worker(), worker(), worker(), worker()]).then(() => {
+    updateProgress(); applyFilters();
+    if(found) toast(`${found} files are already in the game folder — they're marked blue.`, 3500);
+  });
+}
 </script>
 </body>
 </html>

@@ -5,7 +5,7 @@
 const SAVE_KEY='megane-hop-v3',V2_KEY='megane-hop-v2',V1_KEY='megane-hop-v1';
 const DEFAULT_LOOK={coat:'chatora',tail:'hook',hat:'none',neck:'none',face:'none',eyes:'auto'};
 let save={stars:{},best:{},lessons:{},review:{},fish:0,owned:{},look:Object.assign({},DEFAULT_LOOK),heart:false,
-  runBest:0,lastDay:'',rivals:true,sfx:true,voice:'',unlockAll:false,slow:false,useRec:true,gfx:'auto',gfxBudget:0};
+  runBest:0,lastDay:'',open:{},rivals:true,sfx:true,voice:'',unlockAll:false,slow:false,useRec:true,gfx:'auto',gfxBudget:0};
 
 /* old v2 level id -> new level ids covering the same content */
 const V2_TO_V3={1:[1,2],2:[3,4],3:[5],4:[6],5:[7],6:[8],7:[9],8:[11],9:[12,13,14],10:[15,16],11:[17,18],12:[21,22],13:[23]};
@@ -23,7 +23,7 @@ function fromV1(o){
   return s;
 }
 function fromV2(o){
-  const s=Object.assign({},o,{stars:{},best:{},lessons:{},review:{}});
+  const s=Object.assign({},o,{stars:{},best:{},lessons:{},review:{},open:{}});
   for(const k in V2_TO_V3){
     const ids=V2_TO_V3[k];
     ids.forEach(id=>{
@@ -31,7 +31,16 @@ function fromV2(o){
       if(o.best&&o.best[k])s.best[id]=o.best[k];
       if(o.lessons&&o.lessons[k])s.lessons[id]=true;
     });
+    // missed words go to whichever new level uses them
+    ((o.review||{})[k]||[]).forEach(w=>{
+      const id=ids.find(id=>COURSE.spokenWords(COURSE.LEVELS[id-1]).indexOf(w)>=0);
+      if(id)(s.review[id]=s.review[id]||[]).push(w);
+    });
   }
+  // levels that are new in the course (10, 19, 20) open up if the player has already
+  // finished something after them, so the map never has a locked gap
+  const top=Math.max(0,...Object.keys(s.stars).map(Number));
+  COURSE.LEVELS.forEach(L=>{if(L.id<top&&!s.stars[L.id])s.open[L.id]=true;});
   return s;
 }
 try{

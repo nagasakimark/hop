@@ -57,6 +57,7 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 fit();initVoices();
+recPreload(COURSE.PHRASES.map(p=>({ph:p.f})));   // find out early which praise lines are recorded
 setupLevel(TITLE_SCENE,'scene');refreshTitle();
 if(document.fonts&&document.fonts.load){Promise.all([document.fonts.load('700 40px Andika'),document.fonts.load('800 40px "Baloo 2"')]).catch(()=>{});}
 requestAnimationFrame(frame);
