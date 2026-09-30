@@ -399,3 +399,4 @@ function catIcon(look,size){
   drawCat(g,size,size*2*0.5+66*k*0.95,k*0.95,{look,view:'face',expr:'idle',headOnly:true});
   g.restore();
   return iconCache[key]=c.toDataURL();
+}
