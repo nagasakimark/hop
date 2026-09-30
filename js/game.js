@@ -76,7 +76,7 @@ function makeRow(r,q){
 function ensureRows(upto){
   while(G.rows.length<=upto){const q=nextQuestion(G.level,G.used,G.lastQ);G.lastQ={ans:q.ans,set:q.set,lv:q.lv};G.rows.push(makeRow(G.rows.length,q));recPreload([qItem(q)]);}
 }
-function setTheme(name){G.T=THEMES[name];G.sp=getSprites(G.T);G.sceneId++;}
+function setTheme(name){G.T=THEMES[name];G.sp=getSprites(G.T);G.sceneId++;syncVignette(G.T);}
 /* rows worth updating/drawing: a few behind the cat, several ahead */
 function rowWindow(){if(G.mode!=='run')return[0,G.rows.length];const a=Math.max(0,G.rowIdx-3);return[a,Math.min(G.rows.length,Math.max(G.rowIdx,0)+9)];}
 /* start loading the recordings a level will need */

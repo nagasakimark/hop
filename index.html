@@ -9,6 +9,7 @@
 
 <div id="app"><div id="stage">
   <canvas id="cv" aria-label="Game view: stepping stones on the Nakashima River"></canvas>
+  <div id="vig" aria-hidden="true"></div>
 
   <!-- TITLE -->
   <section id="title" class="screen">
@@ -77,6 +78,7 @@
       <div class="set-row"><label for="voiceSel">Voice</label><select id="voiceSel"></select></div>
       <div id="voiceNote" class="note" hidden>No English voice found on this device. Try Chrome, or add an English voice in your system settings.</div>
       <div class="set-row"><span class="lbl">Speaking speed</span><div class="seg" id="segSpeed"><button id="spdNormal">Normal</button><button id="spdSlow">Slow</button></div></div>
+      <div class="set-row"><span class="lbl">Picture<small>Auto: gets simpler on slow computers</small></span><div class="seg" id="segGfx"><button id="gfxAuto">Auto</button><button id="gfxHigh">Sharp</button><button id="gfxFast">Fast</button></div></div>
       <div class="set-row"><span class="lbl">Race other cats<small>Two computer cats hop beside you</small></span><button class="switch" id="swRivals" aria-label="Race other cats"></button></div>
       <div class="set-row"><span class="lbl">Sound effects</span><button class="switch" id="swSfx" aria-label="Sound effects"></button></div>
       <div class="set-row"><span class="lbl">Open all levels<small>For teachers: skip the unlock order</small></span><button class="switch" id="swUnlock" aria-label="Open all levels"></button></div>

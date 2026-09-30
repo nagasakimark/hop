@@ -377,12 +377,17 @@ function fillVoiceSelect(){
 function syncSettings(){
   $('#swRivals').setAttribute('aria-pressed',save.rivals);$('#swSfx').setAttribute('aria-pressed',save.sfx);$('#swUnlock').setAttribute('aria-pressed',save.unlockAll);
   $('#spdNormal').setAttribute('aria-pressed',!save.slow);$('#spdSlow').setAttribute('aria-pressed',save.slow);
+  $('#gfxAuto').setAttribute('aria-pressed',save.gfx==='auto');$('#gfxHigh').setAttribute('aria-pressed',save.gfx==='high');$('#gfxFast').setAttribute('aria-pressed',save.gfx==='fast');
   const r=$('#btnReset');r.classList.remove('armed');r.textContent='Reset';
 }
 function openSettings(){syncSettings();fillVoiceSelect();show('#settings',1);}
 $('#voiceSel').addEventListener('change',e=>{save.voice=e.target.value;persist();loadVoices();say({tts:'cat'});});   // test the computer voice itself
 $('#spdNormal').addEventListener('click',()=>{save.slow=false;persist();syncSettings();sayWord('ship');});
 $('#spdSlow').addEventListener('click',()=>{save.slow=true;persist();syncSettings();sayWord('ship');});
+function setGfx(m){save.gfx=m;if(m==='auto'){GFX.i=0;GFX.bad=0;save.gfxBudget=0;}persist();syncSettings();fit();SFX.click();}
+$('#gfxAuto').addEventListener('click',()=>setGfx('auto'));
+$('#gfxHigh').addEventListener('click',()=>setGfx('high'));
+$('#gfxFast').addEventListener('click',()=>setGfx('fast'));
 $('#swRivals').addEventListener('click',()=>{save.rivals=!save.rivals;persist();syncSettings();});
 $('#swSfx').addEventListener('click',()=>{save.sfx=!save.sfx;persist();syncSettings();syncRiver();ensureAudio();SFX.click();});
 $('#swUnlock').addEventListener('click',()=>{save.unlockAll=!save.unlockAll;persist();syncSettings();if(G.screen==='map')buildMap(mapSel);if(G.screen==='title')refreshTitle();});

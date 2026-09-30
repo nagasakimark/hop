@@ -50,7 +50,8 @@ window.addEventListener('keydown',e=>{
 /* ============================== LOOP ============================== */
 let lastT=performance.now();
 function frame(now){
-  const dt=Math.min(0.05,(now-lastT)/1000);lastT=now;
+  const ms=now-lastT,dt=Math.min(0.05,ms/1000);lastT=now;
+  gfxSample(ms,lastFrameFull);
   update(dt);
   if(G.screen!=='map')render();
   requestAnimationFrame(frame);

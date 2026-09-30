@@ -38,16 +38,49 @@ function fogF(dz,T){return clamp((dz-7)/55,0,1)*T.fogAmt;}
 function poly(pts,fill){const p=[];for(const a of pts){const q=P(a[0],a[1],a[2]);if(!q)return false;p.push(q);}ctx.beginPath();ctx.moveTo(p[0].x,p[0].y);for(let i=1;i<p.length;i++)ctx.lineTo(p[i].x,p[i].y);ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill();}return true;}
 
 /* ============================== CANVAS ============================== */
-const cv=$('#cv'),ctx=cv.getContext('2d');
+const cv=$('#cv');
+let ctx=cv.getContext('2d');          // pointed at the scenery cache while that is being drawn
 const stage=$('#stage');
 let viewScale=1;
+/* Picture quality. The canvas is drawn at one of these pixel scales (1 = one canvas
+   pixel per screen pixel of the 1280x720 stage). 'auto' starts sharp and steps down
+   on computers that can't keep up, and remembers the step for next time. */
+function gfxLevels(){
+  const dpr=Math.min(2,window.devicePixelRatio||1),l=[dpr];
+  if(dpr>1.01)l.push(1);
+  [0.85,0.72,0.6].forEach(v=>{if(v<l[l.length-1]-0.01)l.push(v);});
+  return l;
+}
+const GFX={i:0,n:0,sum:0,bad:0,t0:0};
+function gfxIndex(){
+  const L=gfxLevels();
+  if(save.gfx==='high')return 0;
+  if(save.gfx==='fast')return L.length-1;
+  return clamp(GFX.i,0,L.length-1);
+}
 function fit(){
   const vw=window.innerWidth||1280,vh=window.innerHeight||720;
   const s=Math.min(vw/W,vh/H);viewScale=s;
   stage.style.transform=`translate(${(vw-W*s)/2}px,${(vh-H*s)/2}px) scale(${s})`;
-  const dpr=Math.min(2,window.devicePixelRatio||1);
-  const bw=Math.round(Math.min(2560,W*s*dpr)),bh=Math.round(bw*H/W);
+  const q=gfxLevels()[gfxIndex()];
+  const bw=Math.round(Math.min(2560,W*s*q)),bh=Math.round(bw*H/W);
   if(cv.width!==bw||cv.height!==bh){cv.width=bw;cv.height=bh;}
+}
+/* start one step sharper than last time, so a computer that got faster (or a
+   one-off slow moment) doesn't stay blurry forever */
+GFX.i=Math.max(0,(save.gfxBudget|0)-1);
+/* called every frame with the frame time. Only frames where the whole scene had to be
+   drawn count (the camera moving), because those are the slow ones. */
+function gfxSample(ms,full){
+  if(save.gfx!=='auto'||document.hidden||!full||ms>200)return;
+  if(G.screen!=='play'&&G.screen!=='title'){GFX.n=0;GFX.sum=0;return;}
+  GFX.n++;GFX.sum+=ms;
+  if(GFX.n<45)return;
+  const avg=GFX.sum/GFX.n;GFX.n=0;GFX.sum=0;
+  if(avg>24){GFX.bad++;}else GFX.bad=0;          // slower than ~40 frames a second
+  if(GFX.bad>=2&&GFX.i<gfxLevels().length-1){
+    GFX.i++;GFX.bad=0;save.gfxBudget=GFX.i;persist();fit();
+  }
 }
 window.addEventListener('resize',fit);
 
@@ -114,16 +147,44 @@ function getSprites(T){
   return spriteCache[T.name]=s;
 }
 /* ============================== RENDER ============================== */
+/* Everything behind the stones that only changes when the camera moves: hills, trees,
+   walls, water, the landmark. While the camera is still (most of the time a child is
+   thinking) it is drawn once into an off-screen canvas and then copied each frame. */
+const SC={cv:null,g:null,key:'',still:0,lx:NaN,ly:NaN,lz:NaN};
+function drawScenery(T){
+  drawHills(T);
+  drawOutside(T);
+  drawWater(T);
+  drawWallReflections(T);
+  drawDest(T,'reflect');
+  drawWalls(T);
+  drawDest(T,'inner');
+}
+function sceneryCached(T,k){
+  const key=[cam.x,cam.y,cam.z,G.sceneId,T.name,cv.width,cv.height,G.dest,FZ].join('|');
+  if(!SC.cv||SC.cv.width!==cv.width||SC.cv.height!==cv.height){SC.cv=makeCanvas(cv.width,cv.height);SC.g=SC.cv.getContext('2d');SC.key='';}
+  if(key!==SC.key){
+    const g=SC.g;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,SC.cv.width,SC.cv.height);g.setTransform(k,0,0,k,0,0);
+    const main=ctx;ctx=g;
+    try{drawScenery(T);}finally{ctx=main;}
+    SC.key=key;
+  }
+  ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(SC.cv,0,0);ctx.setTransform(k,0,0,k,0,0);
+}
+let lastFrameFull=true;
 function render(){
   const k=cv.width/W;ctx.setTransform(k,0,0,k,0,0);
   const T=G.T;
-  drawSky(T);drawHills(T);
-  drawOutside(T);
-  drawWater(T);
-  drawWaterDetails(T);
-  drawWalls(T);
-  drawDest(T,'inner');
+  drawSky(T);
+  const still=cam.x===SC.lx&&cam.y===SC.ly&&cam.z===SC.lz;
+  SC.lx=cam.x;SC.ly=cam.y;SC.lz=cam.z;SC.still=still?SC.still+1:0;
+  if(SC.still>=2){sceneryCached(T,k);lastFrameFull=false;}
+  else{drawScenery(T);lastFrameFull=true;}
+  // moving things on the water, drawn over the scenery
+  drawWaterLife(T);
+  if(G.dest==='steps')drawBunting(T);
   if(T.lanterns)drawLanternStrings(T);
+  drawHeartTwinkle();
   // sorted world drawables
   const D=[];
   const zmin=cam.z+0.25,zmax=cam.z+42;
@@ -138,7 +199,13 @@ function render(){
   for(const d of D)d.f();
   // labels on top of the sorted scene would ignore occlusion; they are drawn inside drawStone instead
   drawScreenParts();
-  if(T.vignette){const g=ctx.createRadialGradient(W/2,H*.55,H*.35,W/2,H*.55,H*.95);g.addColorStop(0,'rgba(10,10,40,0)');g.addColorStop(1,`rgba(10,10,40,${T.vignette})`);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+}
+/* The darker edges at sunset and night. Blending a full-screen gradient over the canvas
+   every frame was the most expensive single draw, so it is a CSS layer over the canvas
+   instead (same centre and radii), which the browser composites almost for free. */
+function syncVignette(T){
+  const v=$('#vig');if(!v)return;
+  v.style.background=T.vignette?`radial-gradient(circle at ${W/2}px ${H*.55}px, rgba(10,10,40,0) ${H*.35}px, rgba(10,10,40,${T.vignette}) ${H*.95}px)`:'none';
 }
 function drawSky(T){
   const g=ctx.createLinearGradient(0,0,0,HY+20);g.addColorStop(0,T.sky[0]);g.addColorStop(0.6,T.sky[1]);g.addColorStop(1,T.sky[2]);
@@ -182,11 +249,12 @@ function drawWater(T){
   const g=ctx.createLinearGradient(0,HY,0,H);g.addColorStop(0,T.water[0]);g.addColorStop(0.18,T.water[1]);g.addColorStop(1,T.water[2]);
   ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.lineTo(c.x,c.y);ctx.lineTo(d.x,d.y);ctx.closePath();ctx.fill();
 }
-function drawWaterDetails(T){
-  // wall reflections
+function drawWallReflections(T){
   for(const side of[-1,1]){const x=side*RH;poly([[x,0,cam.z+0.15],[x,0,cam.z+140],[x,-WALL_H*0.9,cam.z+140],[x,-WALL_H*0.9,cam.z+0.15]],rgb(T.c.wallDark,0.22));}
-  // bridge reflection (the "spectacles")
-  drawDest(T,'reflect');
+}
+function drawWaterLife(T){
+  // light moving across the bridge's reflection (the "spectacles")
+  drawShimmer(T);
   // koi under the surface
   for(const k of G.koi){
     if(k.z-cam.z<1||k.z>ZB-1)continue;
@@ -199,10 +267,11 @@ function drawWaterDetails(T){
     ctx.fillStyle=k.c;ctx.beginPath();ctx.moveTo(b.x+wig,b.y);ctx.lineTo(b.x+wig+(b.x-a.x)*.35+0.06*s,b.y+(b.y-a.y)*.35);ctx.lineTo(b.x+wig+(b.x-a.x)*.35-0.06*s,b.y+(b.y-a.y)*.35);ctx.closePath();ctx.fill();
     ctx.globalAlpha=1;
   }
-  // current streaks drifting downstream
+  // current streaks drifting downstream (none behind a bridge: it hides that water)
   ctx.lineCap='round';
+  const zHide=G.dest&&G.dest!=='steps'?ZB-0.5:1e9;
   for(const s of G.streaks){
-    const dz=s.z-cam.z;if(dz<0.6||s.z>ZB-0.5&&s.z<ZB+1.5)continue;
+    const dz=s.z-cam.z;if(dz<0.6||s.z>zHide||s.z>ZB-0.5&&s.z<ZB+1.5)continue;
     const a=P(s.x-s.len/2,0,s.z),b=P(s.x+s.len/2,0,s.z);if(!a||!b)continue;
     const al=s.a*clamp(1-dz/45,0,1)*clamp(dz/2,0,1)*0.55;if(al<0.02)continue;
     ctx.strokeStyle=rgb(T.c.streak,al);ctx.lineWidth=Math.max(1,0.035*a.s);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
@@ -210,6 +279,22 @@ function drawWaterDetails(T){
   // rings
   for(const r of G.rings){const u=r.t/r.max;const e=gEll(r.x,0,r.z,r.r*(0.6+u*1.2),r.r*(0.6+u*1.2));if(!e)continue;
     ctx.strokeStyle=`rgba(255,255,255,${(1-u)*0.6})`;ctx.lineWidth=Math.max(1,0.04*e.s);ctx.beginPath();ctx.ellipse(e.x,e.y,e.rx,e.ry,0,0,TAU);ctx.stroke();}
+}
+/* brick colour by brick and fog step, kept per theme */
+const brickCache={};
+function brickColor(T,side,ci,i,dz){
+  const m=brickCache[T.name]||(brickCache[T.name]=new Map());
+  const key=((i+4096)*8+ci)*2+(side>0?1:0);
+  let e=m.get(key);
+  if(!e){
+    const h=hash(i*7+side*101,ci);
+    let col=shade(T.c.wall,(h-0.5)*0.24);
+    if(ci===0)col=mix(col,T.c.moss,0.5);else if(ci===1)col=mix(col,T.c.moss,0.2);
+    if(ci===7)col=mix(T.c.coping,[255,255,255],(h-.5)*.1);
+    e={col,s:[]};m.set(key,e);
+  }
+  const f=fogF(dz,T),step=Math.round(f*48);   // 48 fog steps: invisible banding
+  return e.s[step]||(e.s[step]=rgb(mix(e.col,T.c.fog,step/48)));
 }
 function drawWalls(T){
   const CH=WALL_H/8,BL=1.08;
@@ -230,20 +315,16 @@ function drawWalls(T){
       for(let i=i0;;i++){
         const z0=i*BL+off,z1=z0+BL;if(z0>zmax)break;
         const za=Math.max(z0+0.045,zn),zb=z1-0.045;if(zb<=za)continue;
-        const h=hash(i*7+side*101,ci);
-        let col=shade(T.c.wall,(h-0.5)*0.24);
-        if(ci===0)col=mix(col,T.c.moss,0.5);else if(ci===1)col=mix(col,T.c.moss,0.2);
-        if(ci===7)col=mix(T.c.coping,[255,255,255],(h-.5)*.1);
-        const dz=(za+zb)/2-cam.z;col=mix(col,T.c.fog,fogF(dz,T));
+        const dz=(za+zb)/2-cam.z;
         const ins=ci===7?0.02:0.045;
-        poly([[x,y0+ins,za],[x,y0+ins,zb],[x,y1-ins,zb],[x,y1-ins,za]],rgb(col));
+        poly([[x,y0+ins,za],[x,y0+ins,zb],[x,y1-ins,zb],[x,y1-ins,za]],brickColor(T,side,ci,i,dz));
       }
     }
     // wet line at the water
     poly([[x,0,zn],[x,0,zmax],[x,0.22,zmax],[x,0.22,zn]],rgb(T.c.wallDark,0.35));
   }
   // heart stone near Meganebashi (left bank)
-  G.heartHit=null;
+  G.heartHit=null;G.heartTw=null;
   const hz=ZB-3.6,hy=1.25;const hc=G.dest==='mega'?P(-RH,hy,hz):null;
   if(hc&&hc.dz<26){
     ctx.beginPath();const pts=[];
@@ -253,9 +334,13 @@ function drawWalls(T){
       ctx.fillStyle=rgb(mix(hex('#e3b2a8'),T.c.fog,fogF(hc.dz,T)*.8));ctx.fill();ctx.strokeStyle=rgb(T.c.wallDark,.8);ctx.lineWidth=Math.max(1,.03*hc.s);ctx.stroke();
       let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;pts.forEach(p=>{x0=Math.min(x0,p.x);x1=Math.max(x1,p.x);y0=Math.min(y0,p.y);y1=Math.max(y1,p.y);});
       G.heartHit={x0:x0-8,x1:x1+8,y0:y0-8,y1:y1+8};
-      if(!save.heart&&G.screen==='play'){const tw=Math.sin(G.time*4)*.5+.5;ctx.fillStyle=`rgba(255,255,255,${.4+tw*.5})`;ctx.beginPath();ctx.arc(x1-4,y0+6,3+tw*3,0,TAU);ctx.fill();}
+      G.heartTw={x:x1-4,y:y0+6};
     }
   }
+}
+function drawHeartTwinkle(){
+  if(!G.heartTw||save.heart||G.screen!=='play')return;
+  const tw=Math.sin(G.time*4)*.5+.5;ctx.fillStyle=`rgba(255,255,255,${.4+tw*.5})`;ctx.beginPath();ctx.arc(G.heartTw.x,G.heartTw.y,3+tw*3,0,TAU);ctx.fill();
 }
 /* ---------- landmarks at the end of each stretch ---------- */
 const STONE_BRIDGES={
@@ -287,12 +372,15 @@ function drawDest(T,mode){
   if(G.dest==='steps'){if(mode==='inner')drawSteps(T);return;}
   const fr=destFrame(T,mode);if(!fr)return;
   if(G.dest==='wood')drawWoodBridge(T,mode,fr.g,fr.f);else drawStoneBridge(T,mode,fr.g,fr.f,STONE_BRIDGES[G.dest]);
-  if(mode==='reflect'){
-    const g=fr.g;g.globalAlpha=1;
-    for(let i=0;i<9;i++){const yy=0.25+i*0.42;const w=0.6+hash(i,3)*1.6;const x0=((G.time*0.25+hash(i,7)*9)%9)-4.5;
-      g.strokeStyle='rgba(255,255,255,.22)';g.lineWidth=0.05;g.beginPath();g.moveTo(x0,yy);g.lineTo(x0+w,yy);g.stroke();}
-  }
   fr.g.restore();
+}
+function drawShimmer(T){
+  if(!G.dest||G.dest==='steps')return;
+  const fr=destFrame(T,'reflect');if(!fr)return;
+  const g=fr.g;g.globalAlpha=1;
+  for(let i=0;i<9;i++){const yy=0.25+i*0.42;const w=0.6+hash(i,3)*1.6;const x0=((G.time*0.25+hash(i,7)*9)%9)-4.5;
+    g.strokeStyle='rgba(255,255,255,.22)';g.lineWidth=0.05;g.beginPath();g.moveTo(x0,yy);g.lineTo(x0+w,yy);g.stroke();}
+  g.restore();
 }
 function bridgeLanterns(g,T,mode,yOf){
   if(!T.lanterns||mode==='reflect')return;
@@ -376,6 +464,9 @@ function drawSteps(T){
     // wet line
     poly([[xi,0,zs],[xi,0.18,zs],[xi,0.18,zfar],[xi,0,zfar]],rgb(darkC,.35));
   }
+}
+function drawBunting(T){
+  const N=7,yt=i=>SLAB_TOP+(i+1)*(WALL_H-SLAB_TOP)/N;
   // finish bunting across the river
   const zb=FZ+0.95;
   for(const s of[-1,1]){const a=P(s*(RH-0.15),yt(2),zb),b=P(s*(RH-0.15),WALL_H+1.7,zb);if(!a||!b)continue;
@@ -413,41 +504,65 @@ function drawSlab(T){
   ctx.strokeStyle=rgb(T.c.stoneDark,.6);ctx.lineWidth=Math.max(1,.02*p.s);
   poly([[x0,y,z0],[x1,y,z0],[x1,y,z1],[x0,y,z1]]);ctx.stroke();
 }
+/* stone colours by fog step, kept per theme (they were mixed afresh for every stone, every frame) */
+const stoneCache={};
+function stoneColors(T,f){
+  const a=stoneCache[T.name]||(stoneCache[T.name]=[]),step=Math.round(f*48);
+  let c=a[step];if(c)return c;
+  f=step/48;
+  const sideC=mix(T.c.stoneSide,T.c.fog,f),darkC=mix(T.c.stoneDark,T.c.fog,f),topC=mix(T.c.stoneTop,T.c.fog,f);
+  c={side:rgb(sideC),dark:rgb(darkC),edge:rgb(shade(darkC,-.3),.8),wet:rgb(shade(darkC,-.35),.45),
+     hi:rgb(shade(topC,.18)),lo:rgb(shade(topC,-.08)),rim:rgb(shade(sideC,-.2),.7),
+     speck:`rgba(80,70,60,${.18*(1-f)})`,moss:rgb(mix(T.c.moss,T.c.fog,f),.7),ripple:0.35*(1-f)};
+  return a[step]=c;
+}
 function drawStone(st,T){
   const top=st.top-st.sink*0.95+(st.wobble?Math.sin(st.wobble*30)*0.03:0);
   const Tt=gEll(st.x,top,st.z,st.r*0.9,st.r*0.9),B=gEll(st.x,0,st.z,st.r*1.06,st.r*1.06);
   if(!Tt||!B)return;
-  const f=fogF(B.dz,T);
+  const f=fogF(B.dz,T),C=stoneColors(T,f);
   // ripple ring (behind the stone)
   const ph=(G.time*0.55+st.seed)%1;const rr=gEll(st.x,0,st.z,st.r*(1.12+ph*0.5),st.r*(1.12+ph*0.5));
-  if(rr){ctx.strokeStyle=`rgba(255,255,255,${(1-ph)*0.35*(1-f)})`;ctx.lineWidth=Math.max(1,0.03*rr.s);ctx.beginPath();ctx.ellipse(rr.x,rr.y,rr.rx,rr.ry,0,0,TAU);ctx.stroke();}
+  if(rr){ctx.strokeStyle=`rgba(255,255,255,${((1-ph)*C.ripple).toFixed(3)})`;ctx.lineWidth=Math.max(1,0.03*rr.s);ctx.beginPath();ctx.ellipse(rr.x,rr.y,rr.rx,rr.ry,0,0,TAU);ctx.stroke();}
   ctx.save();
   if(st.sink>0){ctx.beginPath();ctx.rect(0,0,W,B.y+B.ry*0.35);ctx.clip();ctx.globalAlpha=1-st.sink*0.4;}
-  const sideC=mix(T.c.stoneSide,T.c.fog,f),darkC=mix(T.c.stoneDark,T.c.fog,f),topC=mix(T.c.stoneTop,T.c.fog,f);
   ctx.beginPath();ctx.moveTo(Tt.x-Tt.rx,Tt.y);ctx.lineTo(B.x-B.rx,B.y);ctx.ellipse(B.x,B.y,B.rx,B.ry,0,Math.PI,0,true);ctx.lineTo(Tt.x+Tt.rx,Tt.y);ctx.ellipse(Tt.x,Tt.y,Tt.rx,Tt.ry,0,0,Math.PI,true);ctx.closePath();
-  const sg=ctx.createLinearGradient(0,Tt.y,0,B.y+B.ry);sg.addColorStop(0,rgb(sideC));sg.addColorStop(1,rgb(darkC));
+  const sg=ctx.createLinearGradient(0,Tt.y,0,B.y+B.ry);sg.addColorStop(0,C.side);sg.addColorStop(1,C.dark);
   ctx.fillStyle=sg;ctx.fill();
-  ctx.strokeStyle=rgb(shade(darkC,-.3),.8);ctx.lineWidth=Math.max(1,0.028*B.s);ctx.stroke();
+  ctx.strokeStyle=C.edge;ctx.lineWidth=Math.max(1,0.028*B.s);ctx.stroke();
   // wet band at the waterline
-  ctx.beginPath();ctx.ellipse(B.x,B.y,B.rx,B.ry,0,0.15,Math.PI-0.15);ctx.strokeStyle=rgb(shade(darkC,-.35),.45);ctx.lineWidth=Math.max(1,0.06*B.s);ctx.stroke();
+  ctx.beginPath();ctx.ellipse(B.x,B.y,B.rx,B.ry,0,0.15,Math.PI-0.15);ctx.strokeStyle=C.wet;ctx.lineWidth=Math.max(1,0.06*B.s);ctx.stroke();
   // top face
   ctx.beginPath();ctx.ellipse(Tt.x,Tt.y,Tt.rx,Tt.ry,0,0,TAU);
-  const tg=ctx.createRadialGradient(Tt.x-Tt.rx*.3,Tt.y-Tt.ry*.4,1,Tt.x,Tt.y,Tt.rx*1.1);tg.addColorStop(0,rgb(shade(topC,.18)));tg.addColorStop(1,rgb(shade(topC,-.08)));
-  ctx.fillStyle=tg;ctx.fill();ctx.strokeStyle=rgb(shade(sideC,-.2),.7);ctx.lineWidth=Math.max(1,0.02*B.s);ctx.stroke();
+  const tg=ctx.createRadialGradient(Tt.x-Tt.rx*.3,Tt.y-Tt.ry*.4,1,Tt.x,Tt.y,Tt.rx*1.1);tg.addColorStop(0,C.hi);tg.addColorStop(1,C.lo);
+  ctx.fillStyle=tg;ctx.fill();ctx.strokeStyle=C.rim;ctx.lineWidth=Math.max(1,0.02*B.s);ctx.stroke();
   // speckles and moss
-  if(B.dz<22){for(let i=0;i<6;i++){const a=hash(st.seed,i)*TAU,r=hash(i,st.seed)*.75;ctx.fillStyle=`rgba(80,70,60,${.18*(1-f)})`;ctx.beginPath();ctx.ellipse(Tt.x+Math.cos(a)*r*Tt.rx,Tt.y+Math.sin(a)*r*Tt.ry,Math.max(.8,.04*B.s),Math.max(.5,.025*B.s),0,0,TAU);ctx.fill();}
-    if(hash(st.seed,9)>.45){ctx.fillStyle=rgb(mix(T.c.moss,T.c.fog,f),.7);ctx.beginPath();ctx.ellipse(B.x-B.rx*.45,B.y-B.ry*.2,B.rx*.28,Math.max(1,(B.y-Tt.y)*.25),0.2,0,TAU);ctx.fill();}}
+  if(B.dz<22){ctx.fillStyle=C.speck;ctx.beginPath();const ex=Math.max(.8,.04*B.s),ey=Math.max(.5,.025*B.s);
+    for(let i=0;i<6;i++){const a=hash(st.seed,i)*TAU,r=hash(i,st.seed)*.75,x=Tt.x+Math.cos(a)*r*Tt.rx,y=Tt.y+Math.sin(a)*r*Tt.ry;ctx.moveTo(x+ex,y);ctx.ellipse(x,y,ex,ey,0,0,TAU);}
+    ctx.fill();
+    if(hash(st.seed,9)>.45){ctx.fillStyle=C.moss;ctx.beginPath();ctx.ellipse(B.x-B.rx*.45,B.y-B.ry*.2,B.rx*.28,Math.max(1,(B.y-Tt.y)*.25),0.2,0,TAU);ctx.fill();}}
   ctx.restore();
   if(st.word&&st.labelA>0.01&&!st.sinking)drawLabel(st,Tt);else st.hit=null;
+}
+/* text width at 100px, per word (text width grows in step with the font size) */
+const labelW={};
+function wordW100(w){
+  let v=labelW[w];if(v!=null)return v;
+  ctx.font='700 100px Andika, "Comic Sans MS", sans-serif';v=ctx.measureText(w).width;
+  // don't remember widths measured before the font has loaded
+  if(!document.fonts||document.fonts.check('700 100px Andika'))labelW[w]=v;
+  return v;
 }
 function drawLabel(st,Tt){
   const s=Tt.s;
   const letter=st.letter;
   let fs=letter?clamp(0.6*s,22,74):clamp(0.42*s,16,58);
-  ctx.font=`700 ${fs}px Andika, "Comic Sans MS", sans-serif`;
-  let tw=ctx.measureText(st.word).width;
+  const w100=wordW100(st.word);
+  let tw=w100*fs/100;
   const maxW=(letter?1.0:1.32)*s;
-  if(tw+fs*0.7>maxW){const k=maxW/(tw+fs*0.7);fs*=k;ctx.font=`700 ${fs}px Andika, "Comic Sans MS", sans-serif`;tw=ctx.measureText(st.word).width;}
+  if(tw+fs*0.7>maxW){const k=maxW/(tw+fs*0.7);fs*=k;tw=w100*fs/100;}
+  fs=Math.round(fs*2)/2;
+  ctx.font=`700 ${fs}px Andika, "Comic Sans MS", sans-serif`;
   const ph=letter?fs*1.25:fs*1.3,pw=Math.max(tw+fs*0.75,ph*1.05);
   const cx=Tt.x,cy=Tt.y-ph*0.32-Tt.ry*0.2;
   const hov=G.hover===st&&G.accept;

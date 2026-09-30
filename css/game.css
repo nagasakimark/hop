@@ -251,3 +251,8 @@ button:focus-visible{outline:4px solid var(--sun);outline-offset:3px}
 /* lesson letter tiles are buttons that play the sound */
 button.gtile{cursor:pointer;font-family:var(--read);transition:transform .08s,box-shadow .08s}
 button.gtile:active{transform:translateY(5px);box-shadow:0 2px 0 rgba(16,32,58,.18)}
+/* sunset / night edge shading over the canvas (colours set per theme in world.js) */
+#vig{position:absolute;left:0;top:0;width:1280px;height:720px;pointer-events:none}
+/* give the canvas and the race HUD their own compositor layers so the HUD's shadows
+   aren't re-blended into every canvas frame */
+#cv,#hud > *{will-change:transform}
