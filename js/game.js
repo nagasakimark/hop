@@ -115,8 +115,8 @@ function setupLevel(L,mode){
   }
   if(G.dest)sc.push({k:'dest',z:ZB});
   sc.sort((a,b)=>b.z-a.z);G.scenery=sc;G.sceneId++;
-  G.koi=[];const kc=['#ff8a3d','#fff4e8','#e2442f','#ffd7b0'];
-  for(let i=0;i<6;i++)G.koi.push({x:rand(-3.5,3.5),z:rand(2,run?20:ZB-3),h:rand(0,TAU),v:rand(.25,.45),c:kc[i%4],c2:kc[(i+1)%4],ph:rand(0,6)});
+  G.koi=[];const kt=shuffle(KOI_TYPES.map((_,i)=>i));
+  for(let i=0;i<6;i++)G.koi.push({x:rand(-3.5,3.5),z:rand(2,run?20:ZB-3),h:rand(0,TAU),v:rand(.25,.45),pat:kt[i%kt.length],seed:rand(0,100),ph:rand(0,6)});
   G.streaks=[];for(let i=0;i<90;i++)G.streaks.push({x:rand(-RH+.3,RH-.3),z:rand(0,60),len:rand(.3,.9),a:rand(.3,1)});
   cam.x=0;cam.y=CAM_Y;cam.z=-CAM_BACK;
 }

@@ -276,22 +276,94 @@ function clipOpenWater(){
   for(const[x,z]of pts){const q=P(x,0,Math.max(z,zn));if(!q)continue;if(first){ctx.moveTo(q.x,q.y);first=false;}else ctx.lineTo(q.x,q.y);}
   ctx.closePath();ctx.clip();
 }
+/* ============================== KOI ==============================
+   Low-poly koi seen from above, a little under the surface. The body is a strip of
+   flat-shaded facets along a spine that swings in an S as the fish swims; fins and a
+   forked tail are separate translucent triangles. Varieties are the classic ones. */
+const KOI_TYPES=[
+  {name:'kohaku', base:'#fbf3e8', patch:'#e0432e', fin:'#fff8f0', cover:.45},
+  {name:'sanke',  base:'#fbf3e8', patch:'#e0432e', spot:'#2b2a33', fin:'#fff8f0', cover:.35},
+  {name:'ogon',   base:'#f0b23a', patch:'#ffd977', fin:'#ffe5a3', cover:.3},
+  {name:'showa',  base:'#2b2a33', patch:'#e0432e', spot:'#fbf3e8', fin:'#5b5a66', cover:.4},
+  {name:'chagoi', base:'#ff8a3d', patch:'#ffc48f', fin:'#ffd7b0', cover:.3},
+  {name:'yamabuki',base:'#ffd04a', patch:'#fff1c2', fin:'#fff1c2', cover:.25}
+];
+KOI_TYPES.forEach(t=>{['base','patch','spot','fin'].forEach(n=>{if(t[n])t[n+'C']=hex(t[n]);});});
+// spine from nose (u>0) to tail root, in metres, with the body's half-width at each point
+const KS=1.25,KOI_U=[0.31,0.23,0.12,0.0,-0.11,-0.2,-0.25].map(v=>v*KS),KOI_W=[0.0,0.07,0.1,0.092,0.062,0.034,0.022].map(v=>v*KS);
+function drawKoi(k,T){
+  const ty=KOI_TYPES[k.pat||0],seed=k.seed||0;
+  const ch=Math.cos(k.h),sh=Math.sin(k.h);                 // forward (x,z)
+  const sw=G.time*(4.5+k.v*6)+k.ph;                        // swim beat speeds up with the fish
+  // spine points with an S-shaped swing that grows towards the tail
+  const n=KOI_U.length,c=[],L=[],R=[];
+  for(let i=0;i<n;i++){
+    const f=i/(n-1),d=Math.sin(sw-f*2.6)*0.065*KS*f*f;
+    const cx=k.x+ch*KOI_U[i]-sh*d,cz=k.z+sh*KOI_U[i]+ch*d;
+    c.push([cx,cz]);L.push([cx-sh*KOI_W[i],cz+ch*KOI_W[i]]);R.push([cx+sh*KOI_W[i],cz-ch*KOI_W[i]]);
+  }
+  const tailSwing=Math.sin(sw-3.1)*0.09,tc=c[n-1];
+  const tdx=-ch+(-sh)*tailSwing*-1,tdz=-sh+ch*tailSwing;  // tail points back, swung sideways
+  const tip=(len,side)=>[tc[0]+tdx*len-sh*side,tc[1]+tdz*len+ch*side];
+  const tailL=tip(0.17*KS,0.11*KS),tailR=tip(0.17*KS,-0.11*KS),notch=tip(0.09*KS,0);
+  const Y=-0.07,dz=k.z-cam.z,fog=fogF(dz,T);
+  // the low camera would squash a flat fish into a sliver, so its plane is tipped
+  // up towards the camera a little (further parts sit a touch higher)
+  const pr=(pt,y)=>P(pt[0],y+(pt[1]-k.z)*0.55,pt[1]);
+  const poly3=(pts,y)=>{const q=pts.map(p=>pr(p,y));if(q.some(v=>!v))return false;
+    ctx.beginPath();ctx.moveTo(q[0].x,q[0].y);for(let i=1;i<q.length;i++)ctx.lineTo(q[i].x,q[i].y);ctx.closePath();return true;};
+  // seen through a little water: tinted towards the water colour (more in the dark)
+  const under=T.c.water1||(T.c.water1=hex(T.water[1])),tint=T.stars?0.38:T.vignette?0.26:0.18;
+  const col=(rgbArr,shadeF,alpha)=>rgb(mix(mix(shade(rgbArr,shadeF),under,tint),T.c.fog,fog),alpha);
+  // shadow on the riverbed (offset, soft) so the fish reads as under the surface
+  ctx.save();ctx.translate(0,0);
+  if(poly3([L[1],L[2],L[3],L[4],L[5],tailL,notch,tailR,R[5],R[4],R[3],R[2],R[1],c[0]].map(p=>[p[0]+0.04,p[1]-0.03]),-0.2)){
+    ctx.fillStyle=`rgba(8,30,40,${(0.2*(1-fog)).toFixed(3)})`;ctx.fill();}
+  // fins first (under the body): pectoral fins flap a little
+  const flap=Math.sin(sw*0.7)*0.03;
+  for(const sd of[1,-1]){
+    const r=sd>0?L:R,base1=r[2],base2=r[3];
+    // a short rounded paddle: four points angled back from the shoulder
+    const out=(0.055+flap*0.6)*KS,back=0.05*KS;
+    const f1=[base1[0]-sh*sd*out-ch*back*0.4,base1[1]+ch*sd*out-sh*back*0.4];
+    const f2=[base1[0]-sh*sd*out*0.8-ch*back*1.25,base1[1]+ch*sd*out*0.8-sh*back*1.25];
+    if(poly3([base1,f1,f2,base2],Y)){ctx.fillStyle=col(ty.finC,0,0.55);ctx.fill();}
+  }
+  // tail fin: two flat-shaded halves
+  if(poly3([tc,tailL,notch],Y)){ctx.fillStyle=col(ty.finC,0.04,0.75);ctx.fill();}
+  if(poly3([tc,notch,tailR],Y)){ctx.fillStyle=col(ty.finC,-0.1,0.75);ctx.fill();}
+  // body facets: each segment is split along the spine; facets turned to the light are lighter
+  const light=-sh*0.6+ch*0.8;  // which side faces the sun (fixed world direction)
+  for(let i=0;i<n-1;i++){
+    for(const sd of[1,-1]){
+      const e=sd>0?L:R;
+      const h1=hash(seed+i*3.1,sd>0?1:2),h2=hash(seed+i*5.7,sd>0?3:4);
+      // which colour this facet is: base, patch, or (sanke/showa) a small dark/white spot
+      let cc=ty.baseC;
+      if(h1<ty.cover||(i===1&&hash(seed,9)<.5))cc=ty.patchC;
+      if(ty.spotC&&h2<.18&&i>1)cc=ty.spotC;
+      const lit=sd*light>0?0.1:-0.08;
+      // two triangles per facet: outer edge a touch darker, so the body looks rounded
+      if(poly3([c[i],e[i],e[i+1]],Y)){ctx.fillStyle=col(cc,lit-0.05,0.92);ctx.fill();}
+      if(poly3([c[i],e[i+1],c[i+1]],Y)){ctx.fillStyle=col(cc,lit+0.04,0.92);ctx.fill();}
+    }
+  }
+  // eyes, only when the fish is close enough to see them
+  const head=pr(c[1],Y);
+  if(head&&head.s>70){
+    ctx.fillStyle=rgb(mix([25,25,35],T.c.fog,fog),0.85);
+    for(const sd of[1,-1]){const ex=c[1][0]-sh*sd*0.05*KS+ch*0.02,ez=c[1][1]+ch*sd*0.05*KS+sh*0.02,q=pr([ex,ez],Y+0.01);
+      if(q){ctx.beginPath();ctx.arc(q.x,q.y,Math.max(1,0.012*q.s),0,TAU);ctx.fill();}}
+  }
+  ctx.restore();
+}
+
 function drawWaterLife(T){
   // light moving across the bridge's reflection (the "spectacles")
   drawShimmer(T);
   ctx.save();clipOpenWater();
   // koi under the surface
-  for(const k of G.koi){
-    if(k.z-cam.z<1||k.z>ZB-1)continue;
-    const hx=Math.cos(k.h)*.24,hz=Math.sin(k.h)*.24;
-    const a=P(k.x+hx,-0.12,k.z+hz),b=P(k.x-hx,-0.12,k.z-hz);if(!a||!b)continue;
-    const s=(a.s+b.s)/2;const wig=Math.sin(G.time*6+k.ph)*0.12*s;
-    ctx.globalAlpha=0.55;ctx.lineCap='round';
-    ctx.strokeStyle=k.c;ctx.lineWidth=0.13*s;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo((a.x+b.x)/2+wig*.3,(a.y+b.y)/2,b.x+wig,b.y);ctx.stroke();
-    ctx.fillStyle=k.c2;ctx.beginPath();ctx.arc(lerp(a.x,b.x,.35),lerp(a.y,b.y,.35),0.045*s,0,TAU);ctx.fill();
-    ctx.fillStyle=k.c;ctx.beginPath();ctx.moveTo(b.x+wig,b.y);ctx.lineTo(b.x+wig+(b.x-a.x)*.35+0.06*s,b.y+(b.y-a.y)*.35);ctx.lineTo(b.x+wig+(b.x-a.x)*.35-0.06*s,b.y+(b.y-a.y)*.35);ctx.closePath();ctx.fill();
-    ctx.globalAlpha=1;
-  }
+  for(const k of G.koi){if(k.z-cam.z>=1&&k.z<=ZB-1)drawKoi(k,T);}
   // current streaks drifting downstream (none behind a bridge: it hides that water)
   ctx.lineCap='round';
   const zHide=G.dest&&G.dest!=='steps'?ZB-0.5:1e9;
