@@ -5,7 +5,7 @@
 const SAVE_KEY='megane-hop-v3',V2_KEY='megane-hop-v2',V1_KEY='megane-hop-v1';
 const DEFAULT_LOOK={coat:'chatora',tail:'hook',hat:'none',neck:'none',face:'none',eyes:'auto'};
 let save={stars:{},best:{},lessons:{},review:{},fish:0,owned:{},look:Object.assign({},DEFAULT_LOOK),heart:false,
-  runBest:0,lastDay:'',open:{},rivals:true,sfx:true,voice:'',unlockAll:false,slow:false,useRec:true,gfx:'auto',gfxBudget:0};
+  runBest:0,lastDay:'',open:{},rivals:true,sfx:true,voice:'',slow:false,useRec:true,gfx:'auto',gfxBudget:0};
 
 /* old v2 level id -> new level ids covering the same content */
 const V2_TO_V3={1:[1,2],2:[3,4],3:[5],4:[6],5:[7],6:[8],7:[9],8:[11],9:[12,13,14],10:[15,16],11:[17,18],12:[21,22],13:[23]};
@@ -16,7 +16,7 @@ function fromV1(o){
   let tot=0;for(const k in o.stars||{}){if(MAP[k]){s.stars[MAP[k]]=o.stars[k];s.lessons[MAP[k]]=true;tot+=o.stars[k]|0;}}
   for(const k in o.best||{})if(MAP[k])s.best[MAP[k]]=o.best[k];
   for(const k in OLD_NEED)if(tot>=OLD_NEED[k])s.owned['coat:'+k]=true;
-  ['heart','rivals','sfx','voice','unlockAll','slow'].forEach(k=>{if(k in o)s[k]=o[k];});
+  ['heart','rivals','sfx','voice','slow'].forEach(k=>{if(k in o)s[k]=o[k];});
   if(o.coat)s.look.coat=o.coat;
   if(o.heart)s.look.neck='bell';
   s.fish=tot*5;

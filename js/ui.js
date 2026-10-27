@@ -20,7 +20,7 @@ $('#btnListen .spk').innerHTML=ICON.speaker;$('#btnSlow').innerHTML=ICON.turtle;
 
 function show(id,on){const el=$(id);if(el)el.hidden=!on;}
 function toast(html,ms){const t=$('#toast');t.innerHTML=html;t.hidden=false;t.classList.remove('show');void t.offsetWidth;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>{t.hidden=true;},ms||2600);}
-function isUnlocked(id){return save.unlockAll||id===1||(save.stars[id-1]|0)>0||(save.stars[id]|0)>0||!!(save.open&&save.open[id]);}
+function isUnlocked(id){return id===1||(save.stars[id-1]|0)>0||(save.stars[id]|0)>0||!!(save.open&&save.open[id]);}
 
 ICON.fish='<svg viewBox="0 0 38 26" aria-hidden="true"><path d="M3 13c5-9 17-10 25-3l6-6v18l-6-6c-8 7-20 6-25-3z" fill="#a9c3da" stroke="#1f2a44" stroke-width="2.4" stroke-linejoin="round"/><path d="M8 15c5 3 12 3 18-1" stroke="#fff" stroke-width="2" fill="none" opacity=".7"/><circle cx="10" cy="11" r="2.1" fill="#1f2a44"/><path d="M15 8.5q3 4.5 0 9" stroke="#1f2a44" stroke-width="1.8" fill="none"/></svg>';
 ICON.heart=on=>`<svg viewBox="0 0 24 24"><path d="M12 20.5s-8-4.9-8-10.6A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 8 2.7c0 5.7-8 10.6-8 10.6z" fill="${on?'#e5544a':'#dfe5ec'}" stroke="#1f2a44" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
@@ -32,7 +32,7 @@ const GOAL_SVG={
   steps:'<path d="M2 36V30H12V24H22V18H32V12H42V36Z" fill="#b9ae9f" stroke="#1f2a44" stroke-width="2.5" stroke-linejoin="round"/><path d="M2 5Q22 16 42 5" stroke="#1f2a44" stroke-width="2" fill="none"/><path d="M8 7.5l3 8 3-7z" fill="#e5544a"/><path d="M18 10l3 8 3-8z" fill="#ffc83d"/><path d="M29 9l3 8 3-8.5z" fill="#56b7e6"/>'
 };
 function fishChip(n){return `${ICON.fish}<span>${n}</span>`;}
-function runUnlocked(){return save.unlockAll||LEVELS.some(L=>L.id>=3&&(save.stars[L.id]|0)>0);}
+function runUnlocked(){return LEVELS.some(L=>L.id>=3&&(save.stars[L.id]|0)>0);}
 function hideAll(){['#title','#map','#hud','#results','#pause','#lesson'].forEach(id=>show(id,0));}
 function stopSpeech(){voiceStop();}
 /* audio.js calls this when a letter-sound recording turns out to be missing */
@@ -75,7 +75,7 @@ function startLevel(L){
   prepHud(false);buildTrack();countdown();
 }
 function runLevel(){
-  const from=LEVELS.filter(L=>save.unlockAll||(save.stars[L.id]|0)>0).map(L=>L.id);
+  const from=LEVELS.filter(L=>(save.stars[L.id]|0)>0).map(L=>L.id);
   return{id:'run',title:'River Run',type:'mix',theme:'morning',rival:5,from:from.length?from:[1]};
 }
 function startRun(){
@@ -247,7 +247,7 @@ function renderLesson(){
     $('#prListen').addEventListener('click',()=>{ensureAudio();sayQ(q);});
     $('#prSlow').addEventListener('click',()=>{ensureAudio();sayQ(q,{turtle:true});});
     card.querySelectorAll('.optbtn').forEach(b=>b.addEventListener('click',()=>practiceAnswer(b)));
-    setTimeout(()=>{if(G.screen==='lesson'&&LS.phase==='practice'&&LS.qs[LS.qi]===q)say(LS.qi===0?withPhrase('lets-practise',qItem(resolveQ(q))):qItem(resolveQ(q)));},300);
+    setTimeout(()=>{if(G.screen==='lesson'&&LS.phase==='practice'&&LS.qs[LS.qi]===q)say(qItem(resolveQ(q)));},300);
   }else{
     const d=DESTS[L.dest],first=!save.lessons[L.id];
     if(first){save.lessons[L.id]=true;save.fish+=5;persist();}
@@ -284,7 +284,7 @@ function practiceAnswer(b){
   if(o===q.ans){
     LS.busy=true;b.classList.add('good');SFX.good();LS.expr='happy';drawLessonCat();
     if(LS.miss===0)reviewDrop(q.lv,q.say);
-    const pr=pick(PRAISE);sayPhrase(PRAISE_REC[pr]);
+    const pr=pick(PRAISE);
     fb.innerHTML=`${pr} <span style="color:var(--ink2)">“${esc(q.type==='sound'?q.ans:q.say)}”</span>`;fb.style.color='var(--goodD)';
     setTimeout(()=>{if(LS.phase!=='practice')return;LS.qi++;LS.miss=0;LS.busy=false;if(LS.qi>=LS.qs.length)LS.phase='ready';renderLesson();},1100);
   }else{
@@ -292,7 +292,7 @@ function practiceAnswer(b){
     reviewAdd(q.lv,q.say);persist();
     fb.textContent='Not quite. Listen again!';fb.style.color='var(--bad)';
     if(LS.miss>=2||q.opts.length===2)$('#lsCard').querySelectorAll('.optbtn').forEach(x=>{if(q.opts[+x.dataset.i]===q.ans)x.classList.add('hint');});
-    setTimeout(()=>{if(LS.phase==='practice'&&LS.qs[LS.qi]===q)say(withPhrase('listen-again',qItem(resolveQ(q))),{ttsRate:0.75});},500);
+    setTimeout(()=>{if(LS.phase==='practice'&&LS.qs[LS.qi]===q)say(qItem(resolveQ(q)),{ttsRate:0.75});},500);
   }
 }
 
@@ -344,7 +344,7 @@ function showResults(){
       <button class="btn teal" id="rAgain">${ICON.retry}Again</button>
       ${nextL?`<button class="btn" id="rNext" ${nextOpen?'':'disabled'}>Next${ICON.play}</button>`:''}
     </div>`;
-  show('#results',1);sayPhrase('you-did-it');
+  show('#results',1);
   const svgs=$('#resStars').querySelectorAll('svg');
   svgs.forEach((s,i)=>{if(i<stars)setTimeout(()=>{s.classList.add('on');SFX.star(i);},350+i*380);});
   bindResultWords();
@@ -376,21 +376,13 @@ function showRunResults(){
 function bindResultWords(){$('#resCard').querySelectorAll('.wchip').forEach(b=>b.addEventListener('click',()=>sayWord(b.dataset.w)));}
 
 /* ---- settings ---- */
-function fillVoiceSelect(){
-  const sel=$('#voiceSel');if(!sel)return;
-  sel.innerHTML=voices.length?voices.map(v=>`<option value="${v.name.replace(/"/g,'&quot;')}">${v.name} (${v.lang})${v.localService===false?' — network':''}</option>`).join(''):'<option>No English voice</option>';
-  if(voice)sel.value=voice.name;
-  $('#voiceNote').hidden=!!voices.length||!synth?!!voices.length:false;
-  if(!synth)$('#voiceNote').hidden=false;
-}
 function syncSettings(){
-  $('#swRivals').setAttribute('aria-pressed',save.rivals);$('#swSfx').setAttribute('aria-pressed',save.sfx);$('#swUnlock').setAttribute('aria-pressed',save.unlockAll);
+  $('#swRivals').setAttribute('aria-pressed',save.rivals);$('#swSfx').setAttribute('aria-pressed',save.sfx);
   $('#spdNormal').setAttribute('aria-pressed',!save.slow);$('#spdSlow').setAttribute('aria-pressed',save.slow);
   $('#gfxAuto').setAttribute('aria-pressed',save.gfx==='auto');$('#gfxHigh').setAttribute('aria-pressed',save.gfx==='high');$('#gfxFast').setAttribute('aria-pressed',save.gfx==='fast');
   const r=$('#btnReset');r.classList.remove('armed');r.textContent='Reset';
 }
-function openSettings(){syncSettings();fillVoiceSelect();show('#settings',1);}
-$('#voiceSel').addEventListener('change',e=>{save.voice=e.target.value;persist();loadVoices();say({tts:'cat'});});   // test the computer voice itself
+function openSettings(){syncSettings();show('#settings',1);}
 $('#spdNormal').addEventListener('click',()=>{save.slow=false;persist();syncSettings();sayWord('ship');});
 $('#spdSlow').addEventListener('click',()=>{save.slow=true;persist();syncSettings();sayWord('ship');});
 function setGfx(m){save.gfx=m;if(m==='auto'){GFX.i=0;GFX.bad=0;GFX.good=0;save.gfxBudget=0;}persist();syncSettings();fit();SFX.click();}
@@ -399,7 +391,6 @@ $('#gfxHigh').addEventListener('click',()=>setGfx('high'));
 $('#gfxFast').addEventListener('click',()=>setGfx('fast'));
 $('#swRivals').addEventListener('click',()=>{save.rivals=!save.rivals;persist();syncSettings();});
 $('#swSfx').addEventListener('click',()=>{save.sfx=!save.sfx;persist();syncSettings();syncRiver();ensureAudio();SFX.click();});
-$('#swUnlock').addEventListener('click',()=>{save.unlockAll=!save.unlockAll;persist();syncSettings();if(G.screen==='map')buildMap(mapSel);if(G.screen==='title')refreshTitle();});
 $('#btnReset').addEventListener('click',e=>{const b=e.currentTarget;
   if(!b.classList.contains('armed')){b.classList.add('armed');b.textContent='Tap again to reset';return;}
   Object.assign(save,{stars:{},best:{},lessons:{},review:{},fish:0,owned:{},look:Object.assign({},DEFAULT_LOOK),heart:false,runBest:0,lastDay:'',open:{}});persist();

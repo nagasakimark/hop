@@ -148,7 +148,6 @@ function loadVoices(){
     const saved=all.find(v=>v.name===save.voice);
     if(!saved||isRemoteGoogleVoice(saved)){save.voice=voice.name;persist();}
   }
-  if(typeof fillVoiceSelect==='function')fillVoiceSelect();
 }
 function initVoices(){if(synth){loadVoices();if(synth.addEventListener)synth.addEventListener('voiceschanged',loadVoices);else synth.onvoiceschanged=loadVoices;}}
 function tts(text,rate,id,retried){
@@ -180,5 +179,3 @@ function soundItem(g,fb){const id=COURSE.soundId(g);return id?{snd:id,fb}:(fb?{t
 function qItem(q){return q.snd?{snd:q.snd,fb:q.say}:{w:q.say};}
 function sayQ(q,opt){return q?say(qItem(q),opt):Promise.resolve();}
 /* a recorded praise line, only if the recording exists (never the computer voice) */
-function withPhrase(id,items){return recHas({ph:id})===false?[].concat(items):[{ph:id}].concat(items);}
-function sayPhrase(id){if(recHas({ph:id})===false)return Promise.resolve();return say({ph:id});}

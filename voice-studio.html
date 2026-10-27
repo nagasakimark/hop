@@ -68,7 +68,7 @@
   <div class="how">
     <b>How to record:</b> 1) Enable microphone &nbsp;2) press <b>●</b> on a card, say the word clearly, press <b>■</b> &nbsp;3) press <b>▶</b> to check it, re-record if needed.
     Silence at the start/end is trimmed automatically. Tip: record in a quiet room, keep the same distance from the mic, and say each word the way you want kids to hear it in the game.
-    <br><b>Already recorded?</b> Cards turn <span style="color:#1c6d9a">blue</span> when the file is already in the game's <code>voices/</code>, <code>sounds/</code> or <code>phrases/</code> folder, so you only need to record what's left. (This check works when this page is opened from the game folder.)
+    <br><b>Already recorded?</b> Cards turn <span style="color:#1c6d9a">blue</span> when the file is already in the game's <code>voices/</code>, <code>sounds/</code> folder, so you only need to record what's left. (This check works when this page is opened from the game folder.)
     <br>The game plays <code>.mp3</code> files. If the MP3 encoder can't load (offline), recordings are saved as <code>.wav</code>, which the game can't use — record those again when you're online.
   </div>
   <h2>Words <small id="wordCount"></small></h2>
@@ -77,9 +77,6 @@
   <h2>Letter &amp; pattern sounds <small id="sndCount"></small></h2>
   <p class="sub">Lessons say these before the example words ("sss… sun, sock"), and the early levels ask "hear the sound, pick the letter". Say just the sound, not the letter name. Without a recording the game skips the sound and uses the example word.</p>
   <div class="grid" id="sndGrid"></div>
-  <h2>Praise <small id="phCount"></small></h2>
-  <p class="sub">Optional. Short cheers in your voice. The computer voice never says these.</p>
-  <div class="grid" id="phGrid"></div>
 </main>
 <div id="toast"></div>
 
@@ -96,7 +93,6 @@ const S2L = {};
 COURSE.LEVELS.forEach(L => COURSE.spokenSounds(L).forEach(f => { (S2L[f] = S2L[f] || []).push(L.id); }));
 // the backup word for hearing a sound: "as in thin" -> thin
 const SOUNDS = COURSE.SOUNDS.map(s => { const m = /as in ([a-z]+)/.exec(s.t); return {f: s.f, t: s.t, say: m ? m[1] : s.f}; });
-const PHRASES = COURSE.PHRASES;
 const NEW_SOUNDS = new Set("ng nk sn sk sw gl pl gr dr pr nt mp nd igh u-e ow oi ar or er".split(" "));
 /* words and sounds added with the 23-level course (the first voice pack didn't have them) */
 const NEW_WORDS = new Set("arm bird boy burn car coin cone corn down farm fork girl hand her horn jar oil owl park pond ring sand shirt sing star storm thing town toy turn wing".split(" "));
@@ -307,10 +303,9 @@ function applyFilters(){
 
 /* ---------- build UI ---------- */
 (function build(){
-  const wg = $("#wordGrid"), sg = $("#sndGrid"), pg = $("#phGrid");
+  const wg = $("#wordGrid"), sg = $("#sndGrid");
   WORDS.forEach(w => wg.appendChild(makeCard({key:"word:"+w, label:w, file:w, say:w, group:"word", dir:"voices", levels:W2L[w], isNew:NEW_WORDS.has(w)})));
   SOUNDS.forEach(s => sg.appendChild(makeCard({key:"sound:"+s.f, label:s.t, file:s.f, say:s.say, group:"sound", dir:"sounds", levels:S2L[s.f] || [], isNew:NEW_SOUNDS.has(s.f)})));
-  PHRASES.forEach(p => pg.appendChild(makeCard({key:"phrase:"+p.f, label:p.t, file:p.f, say:p.t, group:"phrase", dir:"phrases", levels:[]})));
   const lf = $("#levelFilter");
   COURSE.LEVELS.forEach(L => {
     const o = document.createElement("option");
@@ -319,7 +314,6 @@ function applyFilters(){
   });
   $("#wordCount").textContent = `(${WORDS.length})`;
   $("#sndCount").textContent = `(${SOUNDS.length})`;
-  $("#phCount").textContent = `(${PHRASES.length}, optional)`;
   $("#newNote").innerHTML = `Cards marked <span class="new" style="background:var(--accent);color:#fff;border-radius:6px;padding:0 6px">new</span> were added with the 23-level course.`;
   $("#search").addEventListener("input", applyFilters);
   $("#levelFilter").addEventListener("change", applyFilters);
@@ -337,7 +331,7 @@ function applyFilters(){
       const r = await idbGet(k);
       if(!r) continue;
       const fname = r.file || String(k).split(":")[1];
-      const dir = k.startsWith("sound:") ? "sounds/" : k.startsWith("phrase:") ? "phrases/" : "voices/";
+      const dir = k.startsWith("sound:") ? "sounds/" : "voices/";
       const path = dir + fname + "." + r.ext;
       zip.file(path, r.blob);
     }

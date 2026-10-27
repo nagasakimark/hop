@@ -2,7 +2,6 @@
 /* ============================== LEVELS & QUESTIONS ============================== */
 const {DESTS,CHAPTERS,LEVELS}=COURSE;
 const PRAISE=['Great!','Yes!','Super!','Nice!','Perfect!','Good ear!'];
-const PRAISE_REC={'Great!':'great','Yes!':'yes','Super!':'super','Nice!':'nice','Perfect!':'perfect','Good ear!':'good-ear'};
 const CHIPS={first:['First sound?','はじめの音は？'],last:['Last sound?','おわりの音は？'],word:['Which word?','どのことば？'],sound:['Which sound?','どの音？']};
 function lv(id){return LEVELS.find(L=>L.id===id);}
 
@@ -213,7 +212,7 @@ function choose(st){
             pl.state='idle';pl.tilt=0;st.gone=true;
             const left=row.stones.filter(s=>!s.gone&&!s.correct).length;
             if(G.rowMiss>=2||left===0)row.stones.forEach(s=>{if(s.correct)s.hint=true;});
-            G.accept=true;say(withPhrase('listen-again',qItem(resolveQ(G.q))));
+            G.accept=true;say(qItem(resolveQ(G.q)));
           });
         });
       });

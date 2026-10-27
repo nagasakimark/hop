@@ -67,15 +67,6 @@ function soundId(g){
   return SOUND_FILES.has(k) ? k : null;
 }
 
-/* short praise / feedback lines (phrases/<file>.mp3) — optional, never
-   spoken by the computer voice; played only if you record them */
-const PHRASES = [
-  {f: 'great', t: 'Great!'}, {f: 'yes', t: 'Yes!'}, {f: 'super', t: 'Super!'},
-  {f: 'nice', t: 'Nice!'}, {f: 'perfect', t: 'Perfect!'}, {f: 'good-ear', t: 'Good ear!'},
-  {f: 'listen-again', t: 'Listen again!'}, {f: 'you-did-it', t: 'You did it!'},
-  {f: 'lets-practise', t: "Let's practise!"}
-];
-
 /* ---------- level helpers ---------- */
 const S = (t, o) => ({t, o: o || []});                        // question set: t = words the game says, o = look-alike choices only shown
 const R1 = (g, w, tip, jp, at) => ({rows: [{g, w, at}], tip, jp});
@@ -278,5 +269,5 @@ function spokenSounds(L){
   return [...s];
 }
 
-return {DESTS, CHAPTERS, LEVELS, SOUNDS, SOUND_OF, PHRASES, soundId, spokenWords, spokenSounds, teachWords};
+return {DESTS, CHAPTERS, LEVELS, SOUNDS, SOUND_OF, soundId, spokenWords, spokenSounds, teachWords};
 })();
