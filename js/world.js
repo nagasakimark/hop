@@ -700,7 +700,7 @@ function drawScreenParts(){
     if(p.k==='star'){ctx.save();ctx.globalAlpha=a;ctx.translate(p.x,p.y);ctx.rotate(p.life*6);ctx.fillStyle=p.c;starPath(ctx,0,0,p.r,p.r*.45);ctx.fill();ctx.restore();}
     else if(p.k==='conf'){ctx.save();ctx.globalAlpha=Math.min(1,a*2);ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.fillStyle=p.c;ctx.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);ctx.restore();}
     else if(p.k==='text'){ctx.save();ctx.globalAlpha=Math.min(1,a*2);const sc=easeOutBack(clamp((p.max-p.life)/0.3,0,1));ctx.translate(p.x,p.y);ctx.scale(sc,sc);
-      ctx.font='800 38px "Baloo 2", sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';ctx.lineWidth=9;ctx.strokeStyle='#1f2a44';ctx.strokeText(p.text,0,0);ctx.fillStyle=p.c;ctx.fillText(p.text,0,0);ctx.restore();}
+      ctx.font='800 38px "Baloo 2", "M PLUS Rounded 1c", sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';ctx.lineWidth=9;ctx.strokeStyle='#1f2a44';ctx.strokeText(p.text,0,0);ctx.fillStyle=p.c;ctx.fillText(p.text,0,0);ctx.restore();}
   }
 }
 function starPath(g,x,y,R,r){g.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rad=i%2?r:R;g.lineTo(x+Math.cos(a)*rad,y+Math.sin(a)*rad);}g.closePath();}

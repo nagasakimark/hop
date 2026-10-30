@@ -1,8 +1,8 @@
 "use strict";
 /* ============================== LEVELS & QUESTIONS ============================== */
 const {DESTS,CHAPTERS,LEVELS}=COURSE;
-const PRAISE=['Great!','Yes!','Super!','Nice!','Perfect!','Good ear!'];
-const CHIPS={first:['First sound?','はじめの音は？'],last:['Last sound?','おわりの音は？'],word:['Which word?','どのことば？'],sound:['Which sound?','どの音？']};
+const PRAISE=['いいね！','すごい！','やったね！','ばっちり！','てんさい！','さすが！'];
+const CHIPS={first:'はじめの音は？',last:'おわりの音は？',word:'どのことば？',sound:'どの音？'};
 function lv(id){return LEVELS.find(L=>L.id===id);}
 
 /* Make one question. n = how many choices; say = force the spoken word (for review);
@@ -163,12 +163,12 @@ function updateCat(c,dt){
 function resolveQ(q){if(q&&q.type==='sound'&&recHas({snd:q.snd})===false){q.type='first';delete q.snd;}return q;}
 function chipFor(q){return CHIPS[resolveQ(q).type]||CHIPS.word;}
 function speakQ(slow){if(G.q)sayQ(G.q,{turtle:!!slow});}
-function setChip(q){const c=chipFor(q);$('#chip').innerHTML=`${c[0]} <span class="jp">${c[1]}</span>`;}
+function setChip(q){$('#chip').textContent=chipFor(q);}
 function activateRow(r){
   if(G.mode==='run'){
     ensureRows(r+6);
     const ti=Math.min(RUN_THEMES.length-1,Math.floor(r/8));
-    if(THEMES[RUN_THEMES[ti]]!==G.T){setTheme(RUN_THEMES[ti]);toast(['','The sun is high','Afternoon on the river','The sun is setting…','Night falls. Lanterns on!'][ti]);}
+    if(THEMES[RUN_THEMES[ti]]!==G.T){setTheme(RUN_THEMES[ti]);toast(['','おひるだよ','ゆうがたの かわだよ','ひが しずむよ…','よるに なったよ。ランタンが ともる！'][ti]);}
   }
   G.rowIdx=r;const row=G.rows[r];G.q=row.q;G.rowMiss=0;
   row.stones.forEach(s=>{s.active=true;s.labelT=0;});
@@ -202,7 +202,7 @@ function choose(st){
     jumpCat(pl,st.x,st.z,TOP_Y,{},()=>{
       st.wobble=1;SFX.bad();pl.view='face';pl.expr='oops';
       later(0.2,()=>{st.sinking=true;pl.state='fall';pl.t=0;pl.fallFrom=pl.y;pl.fallDx=0;});
-      later(0.52,()=>{pl.state='swim';pl.t=0;splash(pl.x,pl.z,1);SFX.splash(1);popWorldText(G.mode==='run'&&G.lives<=0?'Splash!':'Oops! Listen again',st.x,st.z,'#ffffff');});
+      later(0.52,()=>{pl.state='swim';pl.t=0;splash(pl.x,pl.z,1);SFX.splash(1);popWorldText(G.mode==='run'&&G.lives<=0?'ざぶん！':'おしい！ もういちど',st.x,st.z,'#ffffff');});
       later(1.25,()=>{
         if(G.mode==='run'&&G.lives<=0){later(0.4,endRun);return;}
         jumpCat(pl,back.x,back.z,TOP_Y,{h:0.95,dur:0.55},()=>{

@@ -17,14 +17,14 @@ const COAT_KEYS=Object.keys(COATS);
 /* ---- wardrobe catalogue (price in fish; -1 = secret, found in the world) ---- */
 const it=(id,name,price)=>({id,name,price});
 const ITEMS={
-  coat:{label:'Coat',jp:'け',list:[it('chatora','Chatora',0),it('mike','Mike',0),it('hachiware','Hachiware',0),it('saba','Sabatora',60),it('kuro','Kuro',80),
-    it('kijitora','Kijitora',90),it('sabi','Sabi',110),it('shiro','Shiro',110),it('siam','Shamu',150),it('sakura','Sakura',220)]},
-  tail:{label:'Tail',jp:'しっぽ',list:[it('hook','Lucky hook',0),it('long','Long',40),it('bob','Pom-pom',50),it('curl','Curly',60),it('fluffy','Fluffy',90),it('twin','Twin tails',180)]},
-  hat:{label:'Hat',jp:'ぼうし',list:[it('none','No hat',0),it('ribbon','Ribbon',30),it('party','Party hat',40),it('straw','Straw hat',50),it('beanie','Beanie',60),
-    it('beret','Beret',70),it('flower','Flowers',80),it('kasa','Kasa hat',100),it('crown','Crown',200)]},
-  neck:{label:'Neck',jp:'くび',list:[it('none','Nothing',0),it('bandana','Bandana',30),it('bowtie','Bow tie',40),it('scarf','Scarf',60),it('bell','Bell collar',-1)]},
-  face:{label:'Glasses',jp:'めがね',list:[it('none','No glasses',0),it('megane','Round glasses',80),it('shades','Sunglasses',100)]},
-  eyes:{label:'Eyes',jp:'め',list:[it('auto','Natural',0),it('gold','Gold',20),it('green','Green',20),it('blue','Blue',20),it('odd','Odd eyes',80)]}
+  coat:{label:'け',jp:'け',list:[it('chatora','ちゃとら',0),it('mike','みけ',0),it('hachiware','はちわれ',0),it('saba','さばとら',60),it('kuro','くろ',80),
+    it('kijitora','きじとら',90),it('sabi','さび',110),it('shiro','しろ',110),it('siam','シャム',150),it('sakura','さくら',220)]},
+  tail:{label:'しっぽ',jp:'しっぽ',list:[it('hook','かぎしっぽ',0),it('long','ながい',40),it('bob','ぽんぽん',50),it('curl','くるくる',60),it('fluffy','ふわふわ',90),it('twin','ふたつ',180)]},
+  hat:{label:'ぼうし',jp:'ぼうし',list:[it('none','なし',0),it('ribbon','リボン',30),it('party','パーティー',40),it('straw','むぎわら',50),it('beanie','ニット',60),
+    it('beret','ベレー',70),it('flower','おはな',80),it('kasa','かさ',100),it('crown','おうかん',200)]},
+  neck:{label:'くび',jp:'くび',list:[it('none','なし',0),it('bandana','バンダナ',30),it('bowtie','ちょうネクタイ',40),it('scarf','マフラー',60),it('bell','すずの くびわ',-1)]},
+  face:{label:'めがね',jp:'めがね',list:[it('none','なし',0),it('megane','まるめがね',80),it('shades','サングラス',100)]},
+  eyes:{label:'め',jp:'め',list:[it('auto','ふつう',0),it('gold','きいろ',20),it('green','みどり',20),it('blue','あお',20),it('odd','ちがう いろ',80)]}
 };
 const SLOTS=Object.keys(ITEMS);
 function itemOf(slot,id){return ITEMS[slot].list.find(i=>i.id===id);}

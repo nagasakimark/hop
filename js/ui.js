@@ -39,7 +39,7 @@ function stopSpeech(){voiceStop();}
 function onSoundMissing(snd){
   if(G.screen==='play'&&G.q&&G.q.snd===snd){resolveQ(G.q);setChip(G.q);}
   if(G.screen==='lesson'&&LS.phase==='practice'){const q=LS.qs[LS.qi];
-    if(q&&q.snd===snd){resolveQ(q);const t=$('#lsCard .ls-tip'),c=chipFor(q);if(t)t.innerHTML=`${c[0]}<span class="jp">${c[1]}</span>`;}}
+    if(q&&q.snd===snd){resolveQ(q);const t=$('#lsCard .ls-tip'),c=chipFor(q);if(t)t.textContent=c;}}
 }
 
 function goTitle(){
@@ -61,11 +61,11 @@ function openLevel(L){if(save.lessons[L.id])startLevel(L);else startLesson(L);}
 function prepHud(run){
   hideAll();show('#hud',1);
   show('#raceBox',!run);show('#runBox',run);
-  if(!run){const d=DESTS[G.dest];$('#destName').textContent=d.name;$('#goalIcon').innerHTML=GOAL_SVG[G.dest];}
+  if(!run){const d=DESTS[G.dest];$('#destName').textContent=d.jp;$('#goalIcon').innerHTML=GOAL_SVG[G.dest];}
 }
 function countdown(){
-  $('#chip').innerHTML='Get ready!';
-  const c=$('#count');const steps=['3','2','1','Hop!'];
+  $('#chip').textContent='よーい…';
+  const c=$('#count');const steps=['3','2','1','ジャンプ！'];
   steps.forEach((s,i)=>later(0.2+i*0.62,()=>{c.textContent=s;c.classList.remove('pop');void c.offsetWidth;c.classList.add('pop');SFX.beep(i===3);}));
   later(0.2+3*0.62+0.55,()=>{c.textContent='';activateRow(0);});
 }
@@ -76,14 +76,14 @@ function startLevel(L){
 }
 function runLevel(){
   const from=LEVELS.filter(L=>(save.stars[L.id]|0)>0).map(L=>L.id);
-  return{id:'run',title:'River Run',type:'mix',theme:'morning',rival:5,from:from.length?from:[1]};
+  return{id:'run',title:'リバーラン',type:'mix',theme:'morning',rival:5,from:from.length?from:[1]};
 }
 function startRun(){
-  if(!runUnlocked()){toast('Finish level 3 to open River Run!<span class="jp">レベル3をクリアすると あそべるよ</span>',3200);return;}
+  if(!runUnlocked()){toast('レベル3を クリアすると リバーランが あそべるよ！',3200);return;}
   ensureAudio();stopSpeech();
   setupLevel(runLevel(),'run');G.screen='play';
   prepHud(true);updateRunHud();countdown();
-  toast('River Run: how far can you hop? 3 splashes and you are out!<span class="jp">どこまで いけるかな？ 3回おちたら おしまい</span>',3000);
+  toast('どこまで とべるかな？<span class="jp">3かい おちたら おしまいだよ</span>',3000);
 }
 function updateRunHud(){
   $('#runNum').textContent=G.runCount;$('#runBest').textContent=Math.max(save.runBest,G.runCount);
@@ -112,8 +112,8 @@ function buildMap(sel){
   deco+=`<path d="${d}" fill="none" stroke="#7fcac2" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>`;
   deco+=`<path d="${d}" fill="none" stroke="#e8fbf8" stroke-width="3" stroke-dasharray="10 18" stroke-linecap="round" opacity=".8"/>`;
   deco+=`<g transform="translate(690 100)"><rect x="-52" y="-18" width="104" height="30" rx="6" fill="#a9a093" stroke="#1f2a44" stroke-width="4"/><path d="M-46 12 v-6 a18 18 0 0 1 36 0 v6z M10 12 v-6 a18 18 0 0 1 36 0 v6z" fill="#2f5d6a"/><path d="M-46 12 v6 a18 18 0 0 0 36 0 v-6z M10 12 v6 a18 18 0 0 0 36 0 v-6z" fill="#2f5d6a" opacity=".45"/></g>`;
-  deco+=`<g font-family="Baloo 2, sans-serif" font-weight="800"><text x="690" y="58" text-anchor="middle" font-size="24" fill="#1f2a44">Meganebashi</text><text x="690" y="148" text-anchor="middle" font-size="15" fill="#43537a" font-family="M PLUS Rounded 1c, sans-serif">眼鏡橋</text>`;
-  deco+=`<text x="78" y="708" font-size="20" fill="#1f2a44" stroke="#dcefe3" stroke-width="5" paint-order="stroke">Dejima <tspan font-size="14" fill="#43537a" font-family="M PLUS Rounded 1c, sans-serif">出島</tspan></text></g>`;
+  deco+=`<g font-family="Baloo 2, M PLUS Rounded 1c, sans-serif" font-weight="800"><text x="690" y="58" text-anchor="middle" font-size="24" fill="#1f2a44">めがね橋</text>`;
+  deco+=`<text x="78" y="708" font-size="20" fill="#1f2a44" stroke="#dcefe3" stroke-width="5" paint-order="stroke">出島</text></g>`;
   svg.innerHTML=deco+'<g id="nodes"></g>';
   const cur=currentLevelId();
   mapSel=sel||mapSel||cur;if(!isUnlocked(mapSel))mapSel=cur;
@@ -125,7 +125,7 @@ function buildMap(sel){
     // chapter name, above the start of its stretch
     const done=ids.every(id=>(save.stars[id]|0)>0),open=isUnlocked(ids[0]);
     const lx=ltr?XL-26:XR+26,anchor=ltr?'start':'end';
-    marks+=`<g font-family="Baloo 2, sans-serif" font-weight="800" opacity="${open?1:.55}"><text x="${lx}" y="${y-38}" text-anchor="${anchor}" font-size="17" fill="#1f2a44" stroke="#dcefe3" stroke-width="5" paint-order="stroke">${ch.id} · ${ch.title}${done?' ✓':''}</text></g>`;
+    marks+=`<g font-family="Baloo 2, M PLUS Rounded 1c, sans-serif" font-weight="800" opacity="${open?1:.55}"><text x="${lx}" y="${y-38}" text-anchor="${anchor}" font-size="17" fill="#1f2a44" stroke="#dcefe3" stroke-width="5" paint-order="stroke">${ch.id} · ${ch.jp}${done?' ✓':''}</text></g>`;
     ids.forEach((id,k)=>{
       const L=lv(id),x=xs[k];
       // a little landmark across the river between stones: where this level finishes
@@ -137,7 +137,7 @@ function buildMap(sel){
       const label=un?`<text y="8" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="22" fill="#fff" stroke="#1f2a44" stroke-width="5" paint-order="stroke">${id}</text>`:
         `<g transform="translate(-11 -12)" color="#6b7684">${ICON.lock.replace('<svg ','<svg width="22" height="22" ')}</g>`;
       const catMark=id===cur&&un?`<image href="${catIcon(save.look,32)}" x="-22" y="-78" width="44" height="44"><animateTransform attributeName="transform" type="translate" values="0 0;0 -6;0 0" dur="1.2s" repeatCount="indefinite"/></image>`:'';
-      html+=`<g class="node" data-id="${id}" transform="translate(${x.toFixed(1)} ${y})" tabindex="0" role="button" aria-label="Level ${id} ${esc(L.title)}${un?'':' locked'}">
+      html+=`<g class="node" data-id="${id}" transform="translate(${x.toFixed(1)} ${y})" tabindex="0" role="button" aria-label="レベル${id} ${esc(L.ja.name)}${un?'':' （まだ ロック）'}">
         ${selR}<circle class="nd" r="22" fill="${col}" stroke="#1f2a44" stroke-width="4"/>${label}${stars}${catMark}</g>`;
     });
   });
@@ -152,23 +152,23 @@ function renderCard(){
   const L=lv(mapSel),un=isUnlocked(L.id),st=save.stars[L.id]|0,learned=!!save.lessons[L.id];
   const samples=L.sample||Object.keys(L.letters||{});
   let stars='';for(let k=0;k<3;k++)stars+=ICON.star(k<st);
-  const best=save.best[L.id];const bestTxt=best===1?'<span class="crown">Won the race!</span>':best?`Best: ${ordinal(best)} place`:'';
+  const best=save.best[L.id];const bestTxt=best===1?'<span class="crown">1いに なったよ！</span>':best?`ベスト：${best}い`:'';
   const d=DESTS[L.dest];
   const ch=CHAPTERS.find(c=>c.id===L.ch);
   if(un)recPreload(COURSE.spokenSounds(L).map(snd=>({snd})));   // know which letter sounds exist before the race
-  $('#lvCard').innerHTML=`<div class="lv-head"><span class="lv-num">Level ${L.id}</span><span class="lv-ch" style="--chc:${GROUP_COL[L.theme]}">Chapter ${ch.id} · ${ch.title}</span></div>
-    <h2>${L.title}</h2><div class="jp">${L.jp}</div>
-    <p class="how">${L.how}</p>
+  $('#lvCard').innerHTML=`<div class="lv-head"><span class="lv-num">レベル ${L.id}</span><span class="lv-ch" style="--chc:${GROUP_COL[L.theme]}">パート${ch.id} · ${ch.jp}</span></div>
+    <h2>${L.ja.name}</h2>
+    <p class="how">${L.ja.how}</p>
     <div class="samples">${samples.map(w=>`<span>${w}</span>`).join('')}</div>
-    <div class="dest"><svg viewBox="0 0 44 36" width="40" height="33">${GOAL_SVG[L.dest]}</svg>Finish: <b>${d.name}</b><span class="jp" style="font-size:16px">${d.jp}</span></div>
+    <div class="dest"><svg viewBox="0 0 44 36" width="40" height="33">${GOAL_SVG[L.dest]}</svg>ゴール：<b>${d.jp}</b></div>
     ${un?`<div class="lv-stars">${stars}<span class="lv-best">${bestTxt}</span></div>
-      ${learned?`<div class="row2"><button class="btn ghost" id="btnLesson">${ICON.book}Lesson</button></div><button class="btn big" id="btnGo">${ICON.play}Race!</button>`
-        :`<button class="btn big" id="btnGo">${ICON.book}Learn &amp; hop</button>`}`:
-      `<div class="lock-msg">Finish level ${L.id-1} to open this one.<br><span class="jp" style="font-size:16px">レベル${L.id-1}をクリアしよう</span></div>`}`;
+      ${learned?`<div class="row2"><button class="btn ghost" id="btnLesson">${ICON.book}レッスン</button></div><button class="btn big" id="btnGo">${ICON.play}レース！</button>`
+        :`<button class="btn big" id="btnGo">${ICON.book}まなんで ジャンプ！</button>`}`:
+      `<div class="lock-msg">レベル${L.id-1}を クリアすると あそべるよ！</div>`}`;
   const go=$('#btnGo');if(go)go.addEventListener('click',()=>{SFX.click();openLevel(L);});
   const ls=$('#btnLesson');if(ls)ls.addEventListener('click',()=>{SFX.click();startLesson(L);});
 }
-function ordinal(n){return n+(n===1?'st':n===2?'nd':n===3?'rd':'th');}
+function ordinal(n){return n+'い';}
 
 /* ---- lesson: learn cards → practice → race ---- */
 const LS={L:null,phase:'learn',card:0,qs:[],qi:0,miss:0,busy:false,expr:'idle',act:0};
@@ -206,8 +206,8 @@ function lessonTop(phase){
   const n=LS.L.teach.length;let dots='';
   for(let i=0;i<n;i++)dots+=`<i class="${LS.phase==='learn'&&i===LS.card?'on':LS.phase!=='learn'||i<LS.card?'done':''}"></i>`;
   dots+=`<i class="${LS.phase==='practice'?'on':LS.phase==='ready'?'done':''}"></i>`;
-  return `<div class="ls-top"><span class="lv-num">Level ${LS.L.id}</span><span class="phase">${phase}</span><div class="dots">${dots}</div></div>
-    <button class="icon-btn close-x" id="lsClose" aria-label="Close">${ICON.close}</button>`;
+  return `<div class="ls-top"><span class="lv-num">レベル ${LS.L.id}</span><span class="phase">${phase}</span><div class="dots">${dots}</div></div>
+    <button class="icon-btn close-x" id="lsClose" aria-label="とじる">${ICON.close}</button>`;
 }
 function renderLesson(){
   const L=LS.L,card=$('#lsCard');
@@ -217,17 +217,17 @@ function renderLesson(){
     const rows=c.rows.map(r=>{
       if(r.pair){const magic=r.g[1].indexOf('_')>0;
         return `<div class="ls-row"><div class="gtile pair">${esc(r.g[0])}<span style="font-size:.5em;color:var(--ink2);margin:0 .2em">${magic?'→':'/'}</span>${esc(r.g[1])}</div>
-          <div class="ls-words">${wordBtn(r.pair[0],hl(r.pair[0],r.g[0]))}<span class="wbtn" style="border:0;box-shadow:none;background:none;padding:0">${magic?'→':'or'}</span>${wordBtn(r.pair[1],hl(r.pair[1],r.g[1]))}</div></div>`;}
+          <div class="ls-words">${wordBtn(r.pair[0],hl(r.pair[0],r.g[0]))}<span class="wbtn" style="border:0;box-shadow:none;background:none;padding:0">${magic?'→':'と'}</span>${wordBtn(r.pair[1],hl(r.pair[1],r.g[1]))}</div></div>`;}
       const snd=COURSE.soundId(r.s||r.g);
-      return `<div class="ls-row">${snd?`<button class="gtile" data-snd="${snd}" data-fb="${esc(r.w[0])}" aria-label="Hear the sound ${esc(r.g)}">${esc(r.g)}</button>`:`<div class="gtile">${esc(r.g)}</div>`}<div class="ls-words">${r.w.map(w=>wordBtn(w,hl(w,r.g,r.at))).join('')}</div></div>`;
+      return `<div class="ls-row">${snd?`<button class="gtile" data-snd="${snd}" data-fb="${esc(r.w[0])}" aria-label="${esc(r.g)}の 音を きく">${esc(r.g)}</button>`:`<div class="gtile">${esc(r.g)}</div>`}<div class="ls-words">${r.w.map(w=>wordBtn(w,hl(w,r.g,r.at))).join('')}</div></div>`;
     }).join('');
-    card.innerHTML=lessonTop('Learn · まなぼう')+`
-      <div class="ls-body"><div class="ls-tip">${esc(c.tip)}<span class="jp">${c.jp}</span></div>
+    card.innerHTML=lessonTop('まなぼう')+`
+      <div class="ls-body"><div class="ls-tip">${esc(L.ja.tips[LS.card])}</div>
         <div class="ls-rows${many?' many':''}">${rows}</div></div>
-      <div class="ls-foot"><button class="skip" id="lsSkip">Skip to the race</button><canvas id="lsCat" width="300" height="320"></canvas>
-        <div style="display:flex;gap:12px">${LS.card>0?`<button class="btn ghost" id="lsBack">${ICON.back}Back</button>`:''}
-        <button class="btn teal" id="lsHear">${ICON.speaker}Hear all</button>
-        <button class="btn" id="lsNext">${LS.card<L.teach.length-1?'Next':'Practice'}${ICON.play}</button></div></div>`;
+      <div class="ls-foot"><button class="skip" id="lsSkip">レースへ すすむ</button><canvas id="lsCat" width="300" height="320"></canvas>
+        <div style="display:flex;gap:12px">${LS.card>0?`<button class="btn ghost" id="lsBack">${ICON.back}もどる</button>`:''}
+        <button class="btn teal" id="lsHear">${ICON.speaker}ぜんぶ きく</button>
+        <button class="btn" id="lsNext">${LS.card<L.teach.length-1?'つぎへ':'れんしゅう'}${ICON.play}</button></div></div>`;
     card.querySelectorAll('.wbtn[data-w]').forEach(b=>b.addEventListener('click',()=>{LS.act++;ensureAudio();say({w:b.dataset.w},{ttsRate:0.8});LS.expr='happy';drawLessonCat();}));
     card.querySelectorAll('.gtile[data-snd]').forEach(b=>b.addEventListener('click',()=>{LS.act++;ensureAudio();say({snd:b.dataset.snd,fb:b.dataset.fb},{ttsRate:0.8});LS.expr='happy';drawLessonCat();}));
     $('#lsHear').addEventListener('click',()=>{LS.act++;ensureAudio();sayCard(c);});
@@ -237,13 +237,13 @@ function renderLesson(){
     setTimeout(()=>{if(G.screen==='lesson'&&LS.phase==='learn'&&LS.L===L&&LS.card===ci&&LS.act===act)sayCard(c);},350);
   }else if(LS.phase==='practice'){
     const q=LS.qs[LS.qi],chip=chipFor(q);
-    card.innerHTML=lessonTop('Practice · れんしゅう')+`
-      <div class="ls-body"><div class="ls-tip">${chip[0]}<span class="jp">${chip[1]}</span></div>
-        <div class="pr-say"><button class="listen-btn" id="prListen"><span class="spk">${ICON.speaker}</span>Listen</button><button class="slow-btn" id="prSlow" aria-label="Listen slowly">${ICON.turtle}</button></div>
+    card.innerHTML=lessonTop('れんしゅう')+`
+      <div class="ls-body"><div class="ls-tip">${chip}</div>
+        <div class="pr-say"><button class="listen-btn" id="prListen"><span class="spk">${ICON.speaker}</span>きく</button><button class="slow-btn" id="prSlow" aria-label="ゆっくり きく">${ICON.turtle}</button></div>
         <div class="pr-opts">${q.opts.map((o,i)=>`<button class="optbtn" data-i="${i}">${esc(o)}</button>`).join('')}</div>
         <div class="pr-fb" id="prFb"></div></div>
-      <div class="ls-foot"><button class="skip" id="lsSkip">Skip to the race</button><canvas id="lsCat" width="300" height="320"></canvas>
-        <div style="font-weight:800;font-size:24px;color:var(--ink2)">Question ${LS.qi+1} / ${LS.qs.length}</div></div>`;
+      <div class="ls-foot"><button class="skip" id="lsSkip">レースへ すすむ</button><canvas id="lsCat" width="300" height="320"></canvas>
+        <div style="font-weight:800;font-size:24px;color:var(--ink2)">もんだい ${LS.qi+1} / ${LS.qs.length}</div></div>`;
     $('#prListen').addEventListener('click',()=>{ensureAudio();sayQ(q);});
     $('#prSlow').addEventListener('click',()=>{ensureAudio();sayQ(q,{turtle:true});});
     card.querySelectorAll('.optbtn').forEach(b=>b.addEventListener('click',()=>practiceAnswer(b)));
@@ -251,13 +251,13 @@ function renderLesson(){
   }else{
     const d=DESTS[L.dest],first=!save.lessons[L.id];
     if(first){save.lessons[L.id]=true;save.fish+=5;persist();}
-    card.innerHTML=lessonTop('Ready! · じゅんびOK')+`
+    card.innerHTML=lessonTop('じゅんびOK')+`
       <div class="ls-body"><canvas id="lsCat" width="300" height="320" style="width:200px;height:213px"></canvas>
-        <div class="ls-tip" style="font-size:44px">Great practice!<span class="jp">よくできました！</span></div>
-        <div class="ls-tip" style="font-size:26px;color:var(--ink2)">Now race the other cats to the ${d.name}.<span class="jp">${d.jp}まで きょうそうだ！</span></div>
-        ${first?`<div class="fishchip">${ICON.fish}<span>+5 for finishing the lesson</span></div>`:''}</div>
-      <div class="ls-foot"><span></span><div style="display:flex;gap:12px"><button class="btn ghost" id="lsAgain">${ICON.retry}Practice again</button>
-        <button class="btn big" id="lsRace">${ICON.play}Race!</button></div></div>`;
+        <div class="ls-tip" style="font-size:44px">よく できたね！ すごい！</div>
+        <div class="ls-tip" style="font-size:26px;color:var(--ink2)">${d.jp}まで、ほかの ねこと きょうそうだ！</div>
+        ${first?`<div class="fishchip">${ICON.fish}<span>+5 レッスン クリア！</span></div>`:''}</div>
+      <div class="ls-foot"><span></span><div style="display:flex;gap:12px"><button class="btn ghost" id="lsAgain">${ICON.retry}もういちど</button>
+        <button class="btn big" id="lsRace">${ICON.play}レース！</button></div></div>`;
     LS.expr='happy';
     $('#lsAgain').addEventListener('click',()=>{SFX.click();startPractice();});
     $('#lsRace').addEventListener('click',()=>{SFX.click();startLevel(L);});
@@ -290,7 +290,7 @@ function practiceAnswer(b){
   }else{
     LS.miss++;b.classList.add('bad');SFX.bad();LS.expr='oops';drawLessonCat();
     reviewAdd(q.lv,q.say);persist();
-    fb.textContent='Not quite. Listen again!';fb.style.color='var(--bad)';
+    fb.textContent='おしい！ もういちど きいてみよう';fb.style.color='var(--bad)';
     if(LS.miss>=2||q.opts.length===2)$('#lsCard').querySelectorAll('.optbtn').forEach(x=>{if(q.opts[+x.dataset.i]===q.ans)x.classList.add('hint');});
     setTimeout(()=>{if(LS.phase==='practice'&&LS.qs[LS.qi]===q)say(qItem(resolveQ(q)),{ttsRate:0.75});},500);
   }
@@ -301,7 +301,7 @@ let trackImgs=[];
 function buildTrack(){
   const tr=$('#track');tr.querySelectorAll('img').forEach(i=>i.remove());trackImgs=[];
   G.rivals.forEach(rv=>{const im=document.createElement('img');im.src=catIcon(rv.look,22);im.alt='';tr.appendChild(im);trackImgs.push([rv,im]);});
-  const me=document.createElement('img');me.src=catIcon(save.look,24);me.alt='You';me.className='me';tr.appendChild(me);trackImgs.push([G.player,me]);
+  const me=document.createElement('img');me.src=catIcon(save.look,24);me.alt='あなた';me.className='me';tr.appendChild(me);trackImgs.push([G.player,me]);
 }
 function updateHud(){
   if(G.screen!=='play'||G.mode==='run')return;
@@ -313,10 +313,10 @@ function updateHud(){
 /* ---- results ---- */
 function dailyBonus(){if(save.lastDay===todayKey())return 0;save.lastDay=todayKey();return 10;}
 function practiceBlock(){
-  return G.missed.length?`<div class="practice"><h3>Practice these words. Tap to listen.</h3><div class="words">${G.missed.map(w=>`<button class="wchip" data-w="${esc(w)}">${ICON.speaker}${esc(w)}</button>`).join('')}</div></div>`:
-    `<div class="practice"><h3>No mistakes. Great listening!</h3></div>`;
+  return G.missed.length?`<div class="practice"><h3>もういちど れんしゅうしよう。タップして きいてね！</h3><div class="words">${G.missed.map(w=>`<button class="wchip" data-w="${esc(w)}">${ICON.speaker}${esc(w)}</button>`).join('')}</div></div>`:
+    `<div class="practice"><h3>ぜんぶ せいかい！ みみが いいね！</h3></div>`;
 }
-function earnChip(n,parts){return `<div class="earn">${ICON.fish}+${n} fish</div><div class="earn-why">${parts.join(' · ')}</div>`;}
+function earnChip(n,parts){return `<div class="earn">${ICON.fish}+${n} さかな</div><div class="earn-why">${parts.join(' · ')}</div>`;}
 function showResults(){
   const L=G.level;
   const stars=G.misses<=1?3:G.misses<=3?2:1;
@@ -324,25 +324,25 @@ function showResults(){
   if(stars>prev)save.stars[L.id]=stars;
   if(G.place&&(!save.best[L.id]||G.place<save.best[L.id]))save.best[L.id]=G.place;
   // fish: one per first-try answer, plus finishing, placing and new stars
-  const parts=[];let fish=G.firstTry;parts.push(`${G.firstTry} first try`);
-  fish+=5;parts.push('5 finish');
-  const pb=G.place===1?5:G.place===2?2:0;if(pb){fish+=pb;parts.push(`${pb} ${ordinal(G.place)} place`);}
-  const ns=Math.max(0,stars-prev)*3;if(ns){fish+=ns;parts.push(`${ns} new stars`);}
-  const db=dailyBonus();if(db){fish+=db;parts.push(`${db} daily treat`);}
+  const parts=[];let fish=G.firstTry;parts.push(`いっぱつせいかい ${G.firstTry}`);
+  fish+=5;parts.push('ゴール 5');
+  const pb=G.place===1?5:G.place===2?2:0;if(pb){fish+=pb;parts.push(`${ordinal(G.place)} ${pb}`);}
+  const ns=Math.max(0,stars-prev)*3;if(ns){fish+=ns;parts.push(`あたらしい ほし ${ns}`);}
+  const db=dailyBonus();if(db){fish+=db;parts.push(`きょうの ごほうび ${db}`);}
   save.fish+=fish;persist();
   const nextL=lv(L.id+1);const nextOpen=nextL&&isUnlocked(nextL.id);
   const d=DESTS[L.dest];
-  const medal=G.place?`<div class="medal p${Math.min(G.place,3)}">${ordinal(G.place)}</div>`:`<div class="medal p0">Done!</div>`;
-  const title=G.place===1?'You won the race!':`You reached the ${d.name}!`;
-  $('#resCard').innerHTML=`<h2>${title}</h2><div class="jp">${G.place===1?'1いだよ！':d.jp+'に ついた！'}</div>
+  const medal=G.place?`<div class="medal p${Math.min(G.place,3)}">${ordinal(G.place)}</div>`:`<div class="medal p0">ゴール！</div>`;
+  const title=G.place===1?'1いだよ！ すごい！':`${d.jp}に ついたよ！`;
+  $('#resCard').innerHTML=`<h2>${title}</h2>
     <div class="res-top">${medal}<div class="stars" id="resStars">${ICON.star(true)}${ICON.star(true)}${ICON.star(true)}</div></div>
-    <div class="stats">First try: <b>${G.firstTry} / ${ROWS}</b></div>
+    <div class="stats">いっぱつで せいかい：<b>${G.firstTry} / ${ROWS}</b></div>
     ${earnChip(fish,parts)}
     ${practiceBlock()}
     <div class="btns">
-      <button class="btn ghost" id="rMap">${ICON.map}Map</button>
-      <button class="btn teal" id="rAgain">${ICON.retry}Again</button>
-      ${nextL?`<button class="btn" id="rNext" ${nextOpen?'':'disabled'}>Next${ICON.play}</button>`:''}
+      <button class="btn ghost" id="rMap">${ICON.map}マップ</button>
+      <button class="btn teal" id="rAgain">${ICON.retry}もういちど</button>
+      ${nextL?`<button class="btn" id="rNext" ${nextOpen?'':'disabled'}>つぎへ${ICON.play}</button>`:''}
     </div>`;
   show('#results',1);
   const svgs=$('#resStars').querySelectorAll('svg');
@@ -353,20 +353,20 @@ function showResults(){
   const rn=$('#rNext');if(rn)rn.addEventListener('click',()=>{SFX.click();openLevel(nextL);});
   const ch=CHAPTERS.find(c=>c.id===L.ch);
   if(prev===0&&ch&&ch.levels[ch.levels.length-1]===L.id&&L.id!==LEVELS.length)
-    setTimeout(()=>toast(`Chapter ${ch.id} complete: ${ch.title}!<span class="jp">チャプター${ch.id} クリア！</span>`,3600),1400);
-  if(L.id===3&&prev===0)setTimeout(()=>toast('River Run is open! Find it on the title screen.<span class="jp">リバーランが あそべるよ！</span>',4200),1800);
+    setTimeout(()=>toast(`パート${ch.id} クリア！ おめでとう！<span class="jp">${ch.jp}</span>`,3600),1400);
+  if(L.id===3&&prev===0)setTimeout(()=>toast('リバーランが あそべるよ！<span class="jp">タイトルがめんで さがしてね</span>',4200),1800);
 }
 function showRunResults(){
   const n=G.runCount,isBest=n>save.runBest&&n>0;if(isBest)save.runBest=n;
-  const parts=[`${n} stones`];let fish=n;
-  if(isBest){fish+=10;parts.push('10 new record');}
-  const db=dailyBonus();if(db){fish+=db;parts.push(`${db} daily treat`);}
+  const parts=[`${n} こ`];let fish=n;
+  if(isBest){fish+=10;parts.push('しんきろく 10');}
+  const db=dailyBonus();if(db){fish+=db;parts.push(`きょうの ごほうび ${db}`);}
   save.fish+=fish;persist();
-  $('#resCard').innerHTML=`<h2>${isBest?'New record!':'River Run over!'}</h2><div class="jp">${isBest?'しんきろく！':'おつかれさま！'}</div>
-    <div class="res-top"><div class="medal p0" style="font-size:52px">${n}</div><div class="stats" style="text-align:left">stones hopped<br>Best: <b>${save.runBest}</b></div></div>
+  $('#resCard').innerHTML=`<h2>${isBest?'しんきろく！ すごい！':'おつかれさま！'}</h2>
+    <div class="res-top"><div class="medal p0" style="font-size:52px">${n}</div><div class="stats" style="text-align:left">こ とんだよ<br>ベスト：<b>${save.runBest}</b></div></div>
     ${earnChip(fish,parts)}
     ${practiceBlock()}
-    <div class="btns"><button class="btn ghost" id="rHome">Title</button><button class="btn" id="rAgain">${ICON.retry}Run again</button></div>`;
+    <div class="btns"><button class="btn ghost" id="rHome">タイトルへ</button><button class="btn" id="rAgain">${ICON.retry}もういちど</button></div>`;
   show('#results',1);
   if(isBest){SFX.fanfare();confetti();}
   bindResultWords();
@@ -380,7 +380,7 @@ function syncSettings(){
   $('#swRivals').setAttribute('aria-pressed',save.rivals);$('#swSfx').setAttribute('aria-pressed',save.sfx);
   $('#spdNormal').setAttribute('aria-pressed',!save.slow);$('#spdSlow').setAttribute('aria-pressed',save.slow);
   $('#gfxAuto').setAttribute('aria-pressed',save.gfx==='auto');$('#gfxHigh').setAttribute('aria-pressed',save.gfx==='high');$('#gfxFast').setAttribute('aria-pressed',save.gfx==='fast');
-  const r=$('#btnReset');r.classList.remove('armed');r.textContent='Reset';
+  const r=$('#btnReset');r.classList.remove('armed');r.textContent='けす';
 }
 function openSettings(){syncSettings();show('#settings',1);}
 $('#spdNormal').addEventListener('click',()=>{save.slow=false;persist();syncSettings();sayWord('ship');});
@@ -392,10 +392,10 @@ $('#gfxFast').addEventListener('click',()=>setGfx('fast'));
 $('#swRivals').addEventListener('click',()=>{save.rivals=!save.rivals;persist();syncSettings();});
 $('#swSfx').addEventListener('click',()=>{save.sfx=!save.sfx;persist();syncSettings();syncRiver();ensureAudio();SFX.click();});
 $('#btnReset').addEventListener('click',e=>{const b=e.currentTarget;
-  if(!b.classList.contains('armed')){b.classList.add('armed');b.textContent='Tap again to reset';return;}
+  if(!b.classList.contains('armed')){b.classList.add('armed');b.textContent='もういちど タップで けす';return;}
   Object.assign(save,{stars:{},best:{},lessons:{},review:{},fish:0,owned:{},look:Object.assign({},DEFAULT_LOOK),heart:false,runBest:0,lastDay:'',open:{}});persist();
   for(const k in iconCache)delete iconCache[k];syncSettings();
-  toast('Progress reset.');if(G.screen==='map')buildMap(1);if(G.screen==='title')goTitle();});
+  toast('きろくを けしたよ');if(G.screen==='map')buildMap(1);if(G.screen==='title')goTitle();});
 $('#btnSetClose').addEventListener('click',()=>{SFX.click();show('#settings',0);});
 
 /* ---- wardrobe ---- */
@@ -423,9 +423,9 @@ function renderWardrobe(){
     if(headOnly)drawCat(g,130,150+66*2.6,2.6,{look:L,view:'face',expr:'idle',headOnly:true});
     else drawCat(g,130,234,1.95,{look:L,view:wrTab==='tail'?'back':'face',expr:'idle',sway:0.1});
     b.appendChild(c);
-    const tag=on?'<span class="tag">Wearing</span>':own?'':item.price<0?'<span class="price">Secret!</span>':`<span class="price">${ICON.fish}${item.price}</span>`;
+    const tag=on?'<span class="tag">つけてる</span>':own?'':item.price<0?'<span class="price">ひみつ！</span>':`<span class="price">${ICON.fish}${item.price}</span>`;
     b.insertAdjacentHTML('beforeend',`<span class="nm">${item.name}</span>${tag}`);
-    b.setAttribute('aria-label',`${item.name}${on?', wearing':own?'':item.price<0?', secret':', costs '+item.price+' fish'}`);
+    b.setAttribute('aria-label',`${item.name}${on?'（つけてる）':own?'':item.price<0?'（ひみつ）':'（さかな '+item.price+'ひき）'}`);
     b.addEventListener('click',()=>{
       if(own){save.look[wrTab]=item.id;persist();wrFocus=null;SFX.mew();refreshLook();}
       else{wrFocus=item.id;SFX.click();}
@@ -437,15 +437,15 @@ function renderWardrobe(){
 }
 function renderBuyBar(){
   const bar=$('#wrBuy');
-  if(!wrFocus){const cur=itemOf(wrTab,save.look[wrTab]);bar.innerHTML=`<div class="msg">Wearing: ${cur?cur.name:'—'}<small>Tap something to try it on. Earn fish by racing and learning!</small></div>`;return;}
+  if(!wrFocus){const cur=itemOf(wrTab,save.look[wrTab]);bar.innerHTML=`<div class="msg">いま：${cur?cur.name:'—'}<small>きになる ものを タップして ためそう！ レースや べんきょうで さかなを ゲット！</small></div>`;return;}
   const item=itemOf(wrTab,wrFocus);
-  if(item.price<0){bar.innerHTML=`<div class="msg">${item.name}: secret!<small>Look for the heart-shaped stone in the wall near Meganebashi and tap it.<br>めがねばしの ちかくの ハートの石を さがそう</small></div>`;return;}
+  if(item.price<0){bar.innerHTML=`<div class="msg">${item.name}：ひみつ！<small>めがね橋の ちかくの かべにある ハートの石を さがして、タップしてみよう！</small></div>`;return;}
   const short=item.price-save.fish;
-  bar.innerHTML=`<div class="msg">${item.name}<small>${short>0?`You need ${short} more fish. Race, practise and try River Run to earn them!`:'Buy it to keep it forever.'}</small></div>
-    <button class="btn" id="wrBuyBtn" ${short>0?'disabled':''}>${ICON.fish}Buy for ${item.price}</button>`;
+  bar.innerHTML=`<div class="msg">${item.name}<small>${short>0?`あと ${short}ひきで ゲット！ レース・れんしゅう・リバーランで ふやそう！`:'かうと ずっと つかえるよ！'}</small></div>
+    <button class="btn" id="wrBuyBtn" ${short>0?'disabled':''}>${ICON.fish}${item.price}で かう</button>`;
   const bb=$('#wrBuyBtn');if(bb)bb.addEventListener('click',()=>{
     save.fish-=item.price;save.owned[wrTab+':'+item.id]=true;save.look[wrTab]=item.id;persist();wrFocus=null;
-    SFX.fanfare();setTimeout(()=>SFX.mew(),450);toast(`New ${ITEMS[wrTab].label.toLowerCase()}: ${item.name}!`);refreshLook();renderWardrobe();
+    SFX.fanfare();setTimeout(()=>SFX.mew(),450);toast(`あたらしい ${ITEMS[wrTab].label}：${item.name}！`);refreshLook();renderWardrobe();
   });
 }
 function refreshLook(){if(G.player&&G.screen==='title'){G.player.look=save.look;G.player.expr='happy';later(0.8,()=>{G.player.expr='idle';});}refreshTitle();}

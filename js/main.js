@@ -13,7 +13,7 @@ $('#btnRestart').addEventListener('click',()=>{SFX.click();if(G.mode==='run')sta
 $('#btnToMap').addEventListener('click',()=>{SFX.click();if(G.mode==='run')goTitle();else goMap(G.level.id);});
 $('#btnListen').addEventListener('click',()=>{ensureAudio();speakQ();});
 $('#btnSlow').addEventListener('click',()=>{ensureAudio();speakQ(true);});
-function pauseGame(on){if(G.screen!=='play'||G.finished&&on)return;G.paused=on;show('#pause',on);$('#btnToMap').textContent=G.mode==='run'?'Title screen':'River map';if(on){stopSpeech();}else if(G.accept)speakQ();}
+function pauseGame(on){if(G.screen!=='play'||G.finished&&on)return;G.paused=on;show('#pause',on);$('#btnToMap').textContent=G.mode==='run'?'タイトルへ':'マップへ';if(on){stopSpeech();}else if(G.accept)speakQ();}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&G.screen==='play'&&!G.paused&&!G.finished)pauseGame(true);});
 
 /* ---- canvas input ---- */
@@ -28,7 +28,7 @@ cv.addEventListener('pointermove',e=>{const pt=toStage(e);G.hover=stoneAtPoint(p
 cv.addEventListener('pointerdown',e=>{
   const pt=toStage(e);ensureAudio();
   if(heartAt(pt)&&!save.heart){save.heart=true;save.look.neck='bell';persist();SFX.fanfare();
-    toast('You found the heart stone! Your cat got a bell collar.<span class="jp">ハートの石を見つけた！すずのくびわをゲット！</span>',4200);buildTrack();return;}
+    toast('ハートの石を みつけた！<span class="jp">ねこが すずの くびわを ゲットしたよ</span>',4200);buildTrack();return;}
   const s=stoneAtPoint(pt);if(s)choose(s);
   else if(G.screen==='title'){G.player.expr='happy';SFX.mew();later(0.7,()=>{G.player.expr='idle';});}
 });
@@ -58,6 +58,6 @@ function frame(now){
 }
 fit();initVoices();
 setupLevel(TITLE_SCENE,'scene');refreshTitle();
-if(document.fonts&&document.fonts.load){Promise.all([document.fonts.load('700 40px Andika'),document.fonts.load('800 40px "Baloo 2"')]).catch(()=>{});}
+if(document.fonts&&document.fonts.load){Promise.all([document.fonts.load('700 40px Andika'),document.fonts.load('800 40px "Baloo 2"'),document.fonts.load('800 40px "M PLUS Rounded 1c"')]).catch(()=>{});}
 requestAnimationFrame(frame);
 window.__G=G;

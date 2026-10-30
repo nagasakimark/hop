@@ -8,63 +8,63 @@
 <link rel="stylesheet" href="css/game.css">
 
 <div id="app"><div id="stage">
-  <canvas id="cv" aria-label="Game view: stepping stones on the Nakashima River"></canvas>
+  <canvas id="cv" aria-label="ゲームがめん：中島川の とびいし"></canvas>
   <div id="vig" aria-hidden="true"></div>
 
   <!-- TITLE -->
   <section id="title" class="screen">
     <div class="logo">
-      <div class="kicker">Nagasaki <span class="jp">長崎・中島川</span></div>
+      <div class="kicker">長崎・中島川</div>
       <h1>Megane<svg viewBox="0 0 112 70" aria-hidden="true"><path d="M4 40 Q56 30 108 40" stroke="#1f2a44" stroke-width="10" fill="none" stroke-linecap="round"/><circle cx="31" cy="42" r="20" fill="#8fd0c8" stroke="#1f2a44" stroke-width="9"/><circle cx="81" cy="42" r="20" fill="#8fd0c8" stroke="#1f2a44" stroke-width="9"/><path d="M4 40 Q56 30 108 40" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg><span class="hop">Hop!</span></h1>
-      <div class="sub">A phonics race to Meganebashi <span class="jp">フォニックスでぴょんぴょん</span></div>
+      <div class="sub">めがね橋まで ぴょんぴょん！ <span class="jp">えいごの 音を おぼえよう</span></div>
     </div>
     <div class="menu">
-      <button class="btn big" id="btnPlay"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>Play</button>
+      <button class="btn big" id="btnPlay"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>あそぶ</button>
       <div class="row">
-        <button class="btn teal" id="btnCats"><svg viewBox="0 0 24 24"><path d="M4 3l4 5h8l4-5v10a8 8 0 0 1-16 0z" fill="currentColor"/></svg>My cat</button>
-        <button class="btn teal" id="btnRun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M3 16c3-4 6 4 9 0s6 4 9 0M3 9c3-4 6 4 9 0s6 4 9 0"/></svg>River Run</button>
+        <button class="btn teal" id="btnCats"><svg viewBox="0 0 24 24"><path d="M4 3l4 5h8l4-5v10a8 8 0 0 1-16 0z" fill="currentColor"/></svg>ねこの おしゃれ</button>
+        <button class="btn teal" id="btnRun"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M3 16c3-4 6 4 9 0s6 4 9 0M3 9c3-4 6 4 9 0s6 4 9 0"/></svg>リバーラン</button>
       </div>
     </div>
-    <div class="bubble">Nagasaki has lots of cats with bent tails. People say the tail hooks good luck!<span class="jp">長崎には しっぽが曲がったねこが たくさんいるよ</span></div>
+    <div class="bubble">長崎には、しっぽが まがった ねこが たくさん いるよ。<span class="jp">しっぽで しあわせを ひっかけるんだって！</span></div>
     <div class="fishchip wallet" id="titleFish"></div>
-    <button class="icon-btn corner" id="btnSettings1" aria-label="Settings"></button>
+    <button class="icon-btn corner" id="btnSettings1" aria-label="せってい"></button>
   </section>
 
   <!-- MAP -->
   <section id="map" class="screen" hidden>
-    <div class="map-wrap"><svg id="mapSvg" viewBox="0 0 800 720" role="img" aria-label="River map of levels"></svg></div>
-    <button class="icon-btn back" id="btnMapBack" aria-label="Back"></button>
-    <div class="map-title">Nakashima River <span class="jp">中島川</span></div>
+    <div class="map-wrap"><svg id="mapSvg" viewBox="0 0 800 720" role="img" aria-label="レベルの マップ"></svg></div>
+    <button class="icon-btn back" id="btnMapBack" aria-label="もどる"></button>
+    <div class="map-title">中島川</div>
     <aside id="lvCard"></aside>
   </section>
 
   <!-- HUD -->
   <section id="hud" class="screen" hidden>
-    <button class="icon-btn pause" id="btnPause" aria-label="Pause"></button>
+    <button class="icon-btn pause" id="btnPause" aria-label="ひとやすみ"></button>
     <div class="listen">
-      <button class="listen-btn" id="btnListen" aria-label="Listen again"><span class="spk"></span>Listen</button>
-      <button class="slow-btn" id="btnSlow" aria-label="Listen slowly"></button>
+      <button class="listen-btn" id="btnListen" aria-label="もういちど きく"><span class="spk"></span>きく</button>
+      <button class="slow-btn" id="btnSlow" aria-label="ゆっくり きく"></button>
     </div>
-    <div id="chip">Which word? <span class="jp">どのことば？</span></div>
+    <div id="chip">どのことば？</div>
     <div class="race" id="raceBox">
       <div class="track" id="track"><div class="lane"></div><svg class="goal" id="goalIcon" viewBox="0 0 44 36" aria-hidden="true"></svg></div>
-      <div class="rowcount"><span>Stone <b id="rowNum">0</b> / 10</span><span id="destName">Meganebashi</span></div>
+      <div class="rowcount"><span>いし <b id="rowNum">0</b> / 10</span><span id="destName">Meganebashi</span></div>
     </div>
     <div class="runbox" id="runBox" hidden>
-      <div><small>Stones</small><span id="runNum">0</span></div>
-      <div><small>Best</small><span id="runBest">0</span></div>
-      <div class="lives" id="runLives" aria-label="Lives"></div>
+      <div><small>いし</small><span id="runNum">0</span></div>
+      <div><small>ベスト</small><span id="runBest">0</span></div>
+      <div class="lives" id="runLives" aria-label="ライフ"></div>
     </div>
     <div id="count"></div>
   </section>
 
   <!-- PAUSE -->
   <div class="modal" id="pause" hidden><div class="card">
-    <h2>Paused</h2><div class="jp">ひとやすみ</div>
-    <button class="btn" id="btnResume">Keep going</button>
-    <button class="btn teal" id="btnRestart">Start again</button>
-    <button class="btn ghost" id="btnToMap">River map</button>
-    <button class="btn ghost" id="btnSettings2">Settings</button>
+    <h2>ひとやすみ</h2>
+    <button class="btn" id="btnResume">つづける</button>
+    <button class="btn teal" id="btnRestart">はじめから</button>
+    <button class="btn ghost" id="btnToMap">マップへ</button>
+    <button class="btn ghost" id="btnSettings2">せってい</button>
   </div></div>
 
   <!-- RESULTS -->
@@ -72,14 +72,14 @@
 
   <!-- SETTINGS -->
   <div class="modal" id="settings" hidden><div class="card">
-    <h2>Settings</h2><div class="jp">せってい</div>
-    <button class="icon-btn close-x" id="btnSetClose" aria-label="Close"></button>
+    <h2>せってい</h2>
+    <button class="icon-btn close-x" id="btnSetClose" aria-label="とじる"></button>
     <div class="set-list">
-      <div class="set-row"><span class="lbl">Speaking speed</span><div class="seg" id="segSpeed"><button id="spdNormal">Normal</button><button id="spdSlow">Slow</button></div></div>
-      <div class="set-row"><span class="lbl">Picture<small>Auto: gets simpler on slow computers</small></span><div class="seg" id="segGfx"><button id="gfxAuto">Auto</button><button id="gfxHigh">Sharp</button><button id="gfxFast">Fast</button></div></div>
-      <div class="set-row"><span class="lbl">Race other cats<small>Two computer cats hop beside you</small></span><button class="switch" id="swRivals" aria-label="Race other cats"></button></div>
-      <div class="set-row"><span class="lbl">Sound effects</span><button class="switch" id="swSfx" aria-label="Sound effects"></button></div>
-      <div class="set-row"><span class="lbl">Reset progress<small>Clears stars and cats on this device</small></span><button class="danger" id="btnReset">Reset</button></div>
+      <div class="set-row"><span class="lbl">よみあげの はやさ</span><div class="seg" id="segSpeed"><button id="spdNormal">ふつう</button><button id="spdSlow">ゆっくり</button></div></div>
+      <div class="set-row"><span class="lbl">がめんの きれいさ<small>「じどう」は おそい パソコンで かんたんに なるよ</small></span><div class="seg" id="segGfx"><button id="gfxAuto">じどう</button><button id="gfxHigh">きれい</button><button id="gfxFast">はやい</button></div></div>
+      <div class="set-row"><span class="lbl">ほかの ねことレース<small>コンピューターの ねこが 2ひき いっしょに とぶよ</small></span><button class="switch" id="swRivals" aria-label="ほかの ねことレース"></button></div>
+      <div class="set-row"><span class="lbl">こうかおん</span><button class="switch" id="swSfx" aria-label="こうかおん"></button></div>
+      <div class="set-row"><span class="lbl">きろくを けす<small>この パソコンの ほしと ねこの おしゃれが きえるよ</small></span><button class="danger" id="btnReset">けす</button></div>
     </div>
   </div></div>
 
@@ -88,11 +88,11 @@
 
   <!-- WARDROBE -->
   <div class="modal" id="cats" hidden><div class="card">
-    <button class="icon-btn close-x" id="btnCatsClose" aria-label="Close"></button>
+    <button class="icon-btn close-x" id="btnCatsClose" aria-label="とじる"></button>
     <div class="wr-left">
-      <h2>My cat</h2><div class="jp" style="font-size:17px;color:var(--ink2)">ねこのきがえ</div>
+      <h2>ねこの おしゃれ</h2>
       <canvas id="wrPreview" width="600" height="660"></canvas>
-      <button class="btn ghost" id="wrTurn" style="font-size:22px;padding:10px 22px 7px">Turn around</button>
+      <button class="btn ghost" id="wrTurn" style="font-size:22px;padding:10px 22px 7px">ぐるっと まわす</button>
     </div>
     <div class="wr-right">
       <div class="wr-head"><div class="fishchip" id="wrFish"></div></div>

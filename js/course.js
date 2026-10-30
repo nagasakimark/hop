@@ -18,14 +18,14 @@ const DESTS = {
   steps: {name: 'Stone Steps', jp: '石だん'},
   wood:  {name: 'Red Bridge',  jp: '赤い橋'},
   arch:  {name: 'Arch Bridge', jp: '石の橋'},
-  mega:  {name: 'Meganebashi', jp: '眼鏡橋'}
+  mega:  {name: 'Meganebashi', jp: 'めがね橋'}
 };
 
 const CHAPTERS = [
   {id: 1, title: 'Letter Sounds',      jp: 'アルファベットの音', theme: 'morning'},
   {id: 2, title: 'Listening to Words', jp: 'ことばを きこう',     theme: 'day'},
   {id: 3, title: 'Two Letters',        jp: '2文字の音',          theme: 'afternoon'},
-  {id: 4, title: 'Long Vowels',        jp: 'ながい母音',          theme: 'sunset'},
+  {id: 4, title: 'Long Vowels',        jp: 'ながい音',          theme: 'sunset'},
   {id: 5, title: 'Tricky Sounds',      jp: 'にている音',          theme: 'night'}
 ];
 
@@ -252,6 +252,36 @@ LEVELS.forEach(L => {
   if (L.from === 'words') L.from = LEVELS.filter(o => o.type === 'word').map(o => o.id);
 });
 CHAPTERS.forEach(c => c.levels = LEVELS.filter(L => L.ch === c.id).map(L => L.id));
+
+/* ---------- what kids read (easy Japanese; English stays for words and letters) ---------- */
+const FIRST_HOW = 'さいしょの 音を きいて、その もじに ジャンプ！';
+const JA = {
+  1: {name: 'はじめの音 ①', how: FIRST_HOW, tips: ['s は ヘビの 音。スーッ！', 'a は くちを おおきく あけて「ア」', 't は したを はじいて「トッ」', 'p は くちびるを はじいて「パッ」']},
+  2: {name: 'はじめの音 ②', how: FIRST_HOW, tips: ['i は みじかく「イ」', 'n は はなから「ンー」', 'm は くちびるを とじて「ンー」', 'd は したを はじいて、こえも だして「ドッ」']},
+  3: {name: 'はじめの音 ③', how: FIRST_HOW, tips: ['g は のどから「グッ」', 'o は くちを まるく して「オ」', 'c と k は おなじ 音「ク」']},
+  4: {name: 'はじめの音 ④', how: FIRST_HOW, tips: ['e は くちを ちいさく ひらいて「エ」', 'u は ちからを ぬいて「ア」', 'r は くちびるを まるく。したは どこにも さわらないよ', 'h は てに あったかい いきを「ハッ」']},
+  5: {name: 'はじめの音 ⑤', how: FIRST_HOW, tips: ['b は くちびるを はじいて、こえも だして「ブッ」', 'f は うえの はを したの くちびるに あてて「フー」', 'l は したを うえの はの うらに つけて「ル」', 'j は「ジュッ」']},
+  6: {name: 'はじめの音 ⑥', how: FIRST_HOW, tips: ['v は f に こえを のせて「ヴー」', 'w は くちを すぼめて「ウ」', 'y は「イェ」', 'z は ハチの 音「ズー」', 'q と u は いつも いっしょ！「クw」']},
+  7: {name: 'おわりの音', how: 'ことばを きいて、いちばん さいごの もじに ジャンプ！', tips: ['ことばの おわりの 音を きこう', 'n は はな、m は くちびる', 'g は のど、d は した', 'x は「クス」、s は「スー」']},
+  8: {name: 'まんなかの音', how: 'ことばの まんなかの 音だけ ちがうよ。a e i o u を きいてね！', tips: ['a と e は ことばの まんなかに いるよ', 'i o u も まんなかを よく きこう！', 'まんなかの 音だけ ちがうよ！']},
+  9: {name: '3もじの ことば', how: 'にている ことばを よく きいて えらぼう。ぜんぶの 音に ちゅうい！', tips: ['おわりが おなじ ことばの なかま。さいしょの 音だけ ちがうよ', 'さいしょの 音で ことばを みわけよう', 'あれれ？ おわりの 音が かわる ことも あるよ！']},
+  10: {name: 'ことばの おわり ck・ng・nk', how: 'ことばの いちばん さいごの 音を きこう。ck？ ng？ nk？', tips: ['ck は ことばの おわりで「ク」', 'ng は はなの おくで「ング」', 'nk は「ング」+「ク」', 'さいごの 音を よく きこう！']},
+  11: {name: '2もじで 1つの音 sh・ch・th', how: '2もじで 1つの 音。sh・ch・th を きこう！', tips: ['sh は「シーッ」。しずかに！', 'ch は くしゃみの「チュッ」', 'th は したを はで かるく はさんで「ス」', '2もじで 1つの 音。どっちが きこえるかな？']},
+  12: {name: 's と つながる音', how: 'st や sp みたいに、2つの 音が ならぶよ。りょうほう きいてね！', tips: ['2つの 音を はやく つなげよう。s + t = st', 'ほかにも sn・sk・sw が あるよ', 'ふえた 音が きこえるかな？']},
+  13: {name: 'l・r と つながる音', how: 'clap・crab・frog… l や r と つながる 音を きこう！', tips: ['l と つながる 音：cl・fl・bl', 'r と つながる 音：cr・tr・br', 'もっと r の 音：gr・dr・fr', 'l かな？ r かな？ よく きいてね']},
+  14: {name: 'おわりの つながる音', how: 'tent・lamp・nest・hand… おわりの 2つの 音も きいてね！', tips: ['おわりの 音も ぜんぶ いってみよう。n + t = nt', 'n + d = nd。2つ きこえるかな？', 'ふえた 音が きこえるかな？']},
+  15: {name: 'マジック e ① a_e i_e', how: 'さいごに e が あると、ながい 音に なるよ。cap → cape', tips: ['さいごの e は よまないけど、a が「エイ」に なるよ！', 'i は「アイ」に なるよ！', 'マジック e の ことばは、アルファベットの なまえで よむよ']},
+  16: {name: 'マジック e ② o_e u_e', how: 'もういちど マジック e！ not → note、cub → cube', tips: ['o が「オウ」に なるよ！', 'u が「ユー」に なるよ！', 'o_e は「オウ」、u_e は「ユー」']},
+  17: {name: 'ながい音 ai・ay・ee・ea', how: '2もじで ながい 音。rain・play・feet・meat', tips: ['ai と ay は「エイ」。ay は ことばの おわりに くるよ', 'ee と ea は「イー」', 'ながい 音？ みじかい 音？ きいてみよう']},
+  18: {name: 'ながい音 oa・igh・oo', how: 'もっと ながい 音：boat・light・moon', tips: ['oa は「オウ」', 'igh は「アイ」。g と h は よまないよ', 'oo は「ウー」。みじかい「ウ」も あるよ']},
+  19: {name: 'ou・ow・oi・oy', how: 'ou・ow は「アウ」、oi・oy は「オイ」', tips: ['ou と ow は「アウ」（いたい！の アウ）', 'oi と oy は「オイ」。oy は ことばの おわりに くるよ', 'どの 音が きこえるかな？']},
+  20: {name: 'ar・or・er', how: 'r が まえの 音を かえるよ：car・fork・bird・turn', tips: ['ar は「アー」。かいぞくの こえ！', 'or は「オー」', 'er・ir・ur は ぜんぶ おなじ 音「アー」']},
+  21: {name: 'L と R', how: 'L かな？ R かな？ よーく きいてね！', tips: ['l は したが うえに つくよ。r は つかないよ', 'l は したを うえに。r は くちびるを まるくしてね']},
+  22: {name: 'B/V・F/H・S/TH', how: 'くちびる・は・した に ちゅうもく！ 音を きき わけよう', tips: ['b は くちびる、v は はと くちびる', 'f は はと くちびる、h は いきだけ', 's は ヘビの 音、th は したを はさむよ']},
+  23: {name: 'ランタンまつり', how: 'ぜんぶ まぜまぜ！ ランタンの よるに ゴールを めざそう！', tips: ['おぼえているかな？', 'よく きいて。きみなら できる！']}
+};
+LEVELS.forEach(L => { L.ja = JA[L.id]; });
+
 
 /* ---------- what the game can say ---------- */
 function teachWords(L){ const out = []; (L.teach || []).forEach(c => c.rows.forEach(r => out.push(...(r.pair || r.w)))); return out; }
