@@ -12,9 +12,10 @@ const ICON={
   lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
   play:'<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>',
   retry:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v5h5"/></svg>',
-  map:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>'
+  map:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
+  qr:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><path d="M14 14h3v3h-3zM19 14h2M14 19h2M18 18h3v3h-3z" fill="currentColor" stroke-width="1.6"/><path d="M6 6h1M17 6h1M6 17h1" stroke-width="2.4" stroke-linecap="round"/></svg>'
 };
-$('#btnSettings1').innerHTML=ICON.gear;$('#btnMapBack').innerHTML=ICON.back;$('#btnPause').innerHTML=ICON.pause;
+$('#btnSettings1').innerHTML=ICON.gear;$('#btnQr').innerHTML=ICON.qr;$('#btnQrClose').innerHTML=ICON.close;$('#btnMapBack').innerHTML=ICON.back;$('#btnPause').innerHTML=ICON.pause;
 $('#btnSetClose').innerHTML=ICON.close;$('#btnCatsClose').innerHTML=ICON.close;
 $('#btnListen .spk').innerHTML=ICON.speaker;$('#btnSlow').innerHTML=ICON.turtle;
 
@@ -397,6 +398,19 @@ $('#btnReset').addEventListener('click',e=>{const b=e.currentTarget;
   for(const k in iconCache)delete iconCache[k];syncSettings();
   toast('きろくを けしたよ');if(G.screen==='map')buildMap(1);if(G.screen==='title')goTitle();});
 $('#btnSetClose').addEventListener('click',()=>{SFX.click();show('#settings',0);});
+
+/* ---- QR code: share the game with students ---- */
+function shareUrl(){return location.href.split('#')[0].split('?')[0].replace(/index\.html$/,'');}
+function openQr(){
+  const url=shareUrl(),web=/^https?:/.test(url);
+  $('#qrUrl').textContent=url;$('#qrNote').hidden=web;
+  let svg='';
+  try{const q=qrcode(0,'M');q.addData(url);q.make();svg=q.createSvgTag({scalable:true,margin:2});}catch(e){svg='';}
+  $('#qrBox').innerHTML=svg;show('#qr',1);
+}
+$('#btnQr').addEventListener('click',()=>{SFX.click();openQr();});
+$('#btnQrClose').addEventListener('click',()=>{SFX.click();show('#qr',0);});
+$('#qr').addEventListener('click',e=>{if(e.target.id==='qr')show('#qr',0);});
 
 /* ---- wardrobe ---- */
 let wrTab='coat',wrFocus=null,wrView='face';

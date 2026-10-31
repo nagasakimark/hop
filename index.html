@@ -27,6 +27,7 @@
     </div>
     <div class="bubble">長崎には、しっぽが まがった ねこが たくさん いるよ。<span class="jp">しっぽで しあわせを ひっかけるんだって！</span></div>
     <div class="fishchip wallet" id="titleFish"></div>
+    <button class="icon-btn corner qrbtn" id="btnQr" aria-label="QRコード"></button>
     <button class="icon-btn corner" id="btnSettings1" aria-label="せってい"></button>
   </section>
 
@@ -83,6 +84,16 @@
     </div>
   </div></div>
 
+  <!-- QR CODE: share the game with students -->
+  <div class="modal" id="qr" hidden><div class="card">
+    <button class="icon-btn close-x" id="btnQrClose" aria-label="とじる"></button>
+    <h2>QRコードで あそぼう！</h2>
+    <div class="qr-sub">タブレットや パソコンで よみとってね</div>
+    <div id="qrBox" aria-label="QRコード"></div>
+    <div id="qrUrl"></div>
+    <div id="qrNote" hidden>ネットに つないだ ページで ひらくと、QRコードが つかえるよ</div>
+  </div></div>
+
   <!-- LESSON -->
   <section id="lesson" class="screen" hidden><div class="card" id="lsCard"></div></section>
 
@@ -106,6 +117,7 @@
 </div></div>
 
 <!-- Load modules in dependency order -->
+<script src="js/qrcode.js"></script>
 <script src="js/util.js"></script>
 <script src="js/course.js"></script>
 <script src="js/save.js"></script>

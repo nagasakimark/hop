@@ -153,7 +153,15 @@ button:focus-visible{outline:4px solid var(--sun);outline-offset:3px}
 /* ---------- fish wallet ---------- */
 .fishchip{display:inline-flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:6px 18px 3px 10px;font-weight:800;font-size:26px;color:var(--ink);box-shadow:0 5px 0 #c3ceda,0 10px 16px rgba(16,32,58,.2)}
 .fishchip svg{width:38px;height:26px}
-#title .wallet{position:absolute;right:104px;top:28px}
+#title .qrbtn{right:104px}
+#title .wallet{position:absolute;right:184px;top:28px}
+#qr .card{width:520px;text-align:center}
+#qr h2{margin:0;font-size:34px}
+.qr-sub{font-weight:700;font-size:19px;color:var(--ink2);margin-top:6px}
+#qrBox{width:340px;height:340px;margin:16px auto 8px;background:#fff;border:4px solid var(--ink);border-radius:20px;padding:10px;box-sizing:border-box}
+#qrBox svg{width:100%;height:100%;display:block}
+#qrUrl{font-weight:700;font-size:18px;color:var(--ink);word-break:break-all;user-select:text;-webkit-user-select:text}
+#qrNote{font-weight:600;font-size:16px;color:var(--ink2);margin-top:8px}
 #title .menu .btn.locked{filter:grayscale(.8);opacity:.7}
 
 /* ---------- wardrobe ---------- */
